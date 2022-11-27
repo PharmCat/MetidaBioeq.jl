@@ -1,0 +1,28 @@
+name = "MetidaBioeq"
+uuid = "00e1d80e-504f-4d7b-946f-0aea2e7abfe3"
+keywords = ["bioequivalence"]
+desc = "Bioequivalence"
+authors = ["Vladimir Arnautov <mail@pharmcat.net>"]
+version = "0.1.0"
+
+[deps]
+GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+Metida = "a1dec852-9fe5-11e9-361f-8d9fde67cfa2"
+MetidaBase = "075456b7-4006-432f-9324-2f8453996c49"
+MixedModels = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
+
+[compat]
+GLM = "1.8"
+Metida = "0.14"
+MetidaBase = "0.10"
+MixedModels = "3, 4"
+julia = "1"
+
+[extras]
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["CategoricalArrays", "CSV", "DataFrames", "Test"]
