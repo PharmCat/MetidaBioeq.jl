@@ -16,7 +16,7 @@ MixedModels = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
 GLM = "1.8"
 Metida = "0.14"
 MetidaBase = "0.10"
-MetidaNCA = "0.5"
+MetidaNCA = "0.4.6"
 MixedModels = "3, 4"
 julia = "1"
 
