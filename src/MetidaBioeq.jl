@@ -1,7 +1,8 @@
 module MetidaBioeq
 
-using Metida, MetidaBase, GLM, MixedModels, Distributions, Tables, DataFrames
+using Metida, MetidaBase, MetidaNCA, GLM, MixedModels, Distributions, Tables, DataFrames
 
 include("types.jl")
+include("bioequivalence.jl")
 
 end 
