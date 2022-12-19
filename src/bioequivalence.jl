@@ -32,18 +32,19 @@ end
 """
 function bioequivalence(data;
     vars = nothing,
-    subject = :subject,
-    period = :period,
-    formulation = :formulation,
-    sequence = nothing,
-    reference = nothing,
-    design = nothing,
+    subject::Union{String, Symbol},
+    period::Union{String, Symbol, Nothing} = nothing,
+    formulation::Union{String, Symbol},
+    sequence::Union{String, Symbol, Nothing} = nothing,
+    reference::Union{String, Symbol, Nothing} = nothing,
+    design::Union{String, Symbol, Nothing} = nothing,
     io::IO = stdout,
-    seqcheck = true,
-    dropcheck = true,
-    info = true,
-    autoseq = false,
-    logt = true)
+    seqcheck::Bool = true,
+    dropcheck::Bool = true,
+    info::Bool = true,
+    warns::Bool = true,
+    autoseq::Bool = false,
+    logt::Bool = true)
 
     if !isa(vars, Vector{<:Symbol}) 
         if isa(vars, Symbol) vars = [vars] 
@@ -57,66 +58,87 @@ function bioequivalence(data;
     if isa(design, Symbol) design = string(design) end
     if isa(design, String) && design != "parallel" design = uppercase(design) end
 
+    if isa(subject, String) subject = Symbol(subject) end
+    if isa(formulation, String) formulation = Symbol(formulation) end
+    if isa(period, String) period = Symbol(period) end
+    if isa(sequence, String) sequence = Symbol(sequence) end
+
     dfnames = Symbol.(Tables.columnnames(data))
 
     fac = [subject, formulation]
 
     fac ⊆ dfnames || error("Subject or formulation column not found in dataframe!")
+    # Check subject and formulation column is categorical
+    if isa(Tables.getcolumn(data, subject), AbstractVector{<:Real}) && !isa(Tables.getcolumn(data, subject), AbstractCategoricalArray)
+        warns && @warn "Seems subject column is not categorical."
+    end
+    if isa(Tables.getcolumn(data, formulation), AbstractVector{<:Real}) && !isa(Tables.getcolumn(data, formulation), AbstractCategoricalArray)
+        warns && @warn "Seems formulation column is not categorical."
+    end
 
+    # Subject column can't have missing data
     nomissing(data, subject) || error("Subject column have missing data")
-
+    # Formulation column can't have missing data
     nomissing(data, formulation) || error("Formulation column have missing data")
 
-    obsnum = size(data, 1)
-
-    subjects = unique(Tables.getcolumn(data, subject))
+    # Unique subjects and formulations
+    subjects     = unique(getcol(data, subject))
+    formulations = sort!(unique(getcol(data, formulation)))
 
     subjnum = length(subjects)
-
-    formulations = sort!(unique(Tables.getcolumn(data, formulation)))
-
+    obsnum  = size(data, 1)
+    # If reference not defined - first level used as base
     if isnothing(reference)
-        @info "Reference formulation not specified. First used: \"$(first(formulations))\"."
+        info && @info "Reference formulation not specified. First used: \"$(first(formulations))\"."
         reference = first(formulations)
     else
         reference ∈ formulations || error("Reference formulation \"$(reference)\" not found in dataframe.")
     end
 
-    dropout = nothing
-    periods = nothing
+    dropout   = nothing
+    periods   = nothing
     sequences = nothing
 
+    # For parallel design period and sequence are nothing
     if isnothing(period) && isnothing(sequence) && isnothing(design)
-        length(subjects) == length(Tables.getcolumn(data, subject)) || error("Trial design seems parallel, but subjects not unique!")
+        subjnum == length(Tables.getcolumn(data, subject)) || error("Trial design seems parallel, but subjects not unique!")
         design = "parallel"
-        println(io, "Parallel desigh used.")
+        info && @info "Parallel desigh used."
     end
 
-
+    # check if design is not parallel
     if isnothing(design) || design != "parallel"
-
+        # Period should be defined
         !isnothing(period) || error("Trial design seems NOT parallel, but period is nothing")
-
-        autoseq || !isnothing(sequence) || error("Trial design seems NOT parallel, but sequence is nothing, autoseq is `false`")
-
+        # Sequence should be defined
+        autoseq || !isnothing(sequence) || error("Trial design seems NOT parallel, but sequence is `nothing`, autoseq is `false`")
+        # 
         period ∈ dfnames || error("Period not found in dataframe!")
-
+        # Check period column is categorical
+        if isa(Tables.getcolumn(data, period), AbstractVector{<:Real}) && !isa(Tables.getcolumn(data, period), AbstractCategoricalArray)
+            @warn "Seems period column is not categorical."
+        end
+        # If sequence defined it should be in table
         if !isnothing(sequence)
             sequence ∈ dfnames || error("Sequence not found in dataframe!")
+        else
+            # Check sequence column is categorical
+            if isa(Tables.getcolumn(data, sequence), AbstractVector{<:Real}) && !isa(Tables.getcolumn(data, sequence), AbstractCategoricalArray)
+                @warn "Seems sequence column is not categorical."
+            end
         end
 
         periods = sort!(unique(Tables.getcolumn(data, period)))
-
         push!(fac, period)
-
+        # Period column can't have missing data
         nomissing(data, period) || error("Period column have missing data")
-
+        # Check sequences
         if autoseq || seqcheck
             subjdict = Dict()
             for p in periods
                 for i = 1:obsnum
-                    if Tables.getcolumn(data, period)[i] == p
-                        subj = Tables.getcolumn(data, subject)[i]
+                    if getcol(data, period)[i] == p
+                        subj = getcol(data, subject)[i]
                         if haskey(subjdict, subj)
                             subjdict[subj] *= string(getcol(data, formulation)[i])
                         else
@@ -132,18 +154,17 @@ function bioequivalence(data;
         elseif isnothing(sequence)
             error("Sequence is nothing, but autoseq is false")
         else
-            if info && autoseq @info "autoseq is true, but sequence defined - sequence column used" end
+            info && autoseq && @info "autoseq is `true`, but sequence defined - sequence column used"
             sequences = unique(getcol(data, sequence))
-            push!(fac, sequence)
-
             nomissing(data, sequence) || error("Sequence column have missing data")
+            push!(fac, sequence)
         end
 
 
         if dropcheck
             if !isnothing(vars) && !nomissing(data, vars)
+                info && @info "Dropuot(s) found in dataframe!"
                 dropout = true
-                @info "Dropuot(s) found in dataframe!"
             elseif !isnothing(vars)
                 info && @info "No dropuot(s) found in dataframe!"
                 dropout = false
@@ -164,7 +185,7 @@ function bioequivalence(data;
 
         if isnothing(design)
             info && @info "Trying to find out the design..."
-            design = Symbol("$(length(formulations))X$(length(sequences))X$(length(periods))")
+            design = "$(length(formulations))X$(length(sequences))X$(length(periods))"
             info && @info  "Seems design type is: $design"
         else
             spldes = split(design, "X")
@@ -192,24 +213,80 @@ function bioequivalence(data;
         logt)
 end
 
+"""
+    makeseq(data;
+        subject = :subject,
+        period = :period,
+        formulation = :formulation)
+
+Make sequence vector from `data` and `subject`, `period`, `formulation` columns.
+"""
+function makeseq(data;
+    subject = :subject,
+    period = :period,
+    formulation = :formulation)
+
+    dfnames = Symbol.(Tables.columnnames(data))
+
+    subject ∈ dfnames     || error("Subject column not found in dataframe!")
+    period ∈ dfnames      || error("Period column not found in dataframe!")
+    formulation ∈ dfnames || error("Formulation column not found in dataframe!")
+    # Subject column can't have missing data
+    nomissing(data, subject)     || error("Subject column have missing data")
+    # Formulation column can't have missing data
+    nomissing(data, formulation) || error("Formulation column have missing data")
+    # Period column can't have missing data
+    nomissing(data, period)      || error("Period column have missing data")
+
+    # Unique periods
+    periods      = sort!(unique(getcol(data, period)))
+
+    obsnum  = size(data, 1)
+
+    subjdict = Dict()
+    for p in periods
+        for i = 1:obsnum
+            if getcol(data, period)[i] == p
+                subj = getcol(data, subject)[i]
+                if haskey(subjdict, subj)
+                    subjdict[subj] *= string(getcol(data, formulation)[i])
+                else
+                    subjdict[subj] = string(getcol(data, formulation)[i])
+                end
+            end
+        end
+    end
+    map(x-> subjdict[x], getcol(data, subject))
+end
+
+"""
+    result(be; estimator = "auto", method = "auto", supresswarn = false)
+
+Reference:
+EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE](https://www.ema.europa.eu/en/documents/scientific-guideline/guideline-investigation-bioequivalence-rev1_en.pdf)
+EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE, Annex I](https://www.ema.europa.eu/en/documents/other/31-annex-i-statistical-analysis-methods-compatible-ema-bioequivalence-guideline_en.pdf)
+
+"""
 function result(be; estimator = "auto", method = "auto", supresswarn = false)
 
     length(be.formulations) > 2 &&  error("More than 2 formulations not supported yet")
     design = be.design
     if method == "auto"
-        if design in (:parallel, Symbol("2X2"), Symbol("2X2X2")) 
+        if design in ("2X2", "2X2X2") 
             method == "A" 
+        elseif design == "parallel" 
+            method == "P"
         else
             method == "B"  
         end
     end
     # Define estimator: MixedModel / Metida / GLM
     if estimator == "auto" 
-        if design == :parallel 
+        if design == "parallel" 
             estimator = "glm"
         else
             # Check DS correctness, mixed modela used for incomplete data
-            if  design in (Symbol("2X2"), Symbol("2X2X2")) 
+            if  design in ("2X2", "2X2X2") 
                 if be.dropout 
                     estimator = "mm"
                 else
@@ -227,22 +304,23 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
     end
     
     # MODEL SELECTION
-    if design == :parallel
+    if design == "parallel"
 
-        if esimator != "glm" && supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
-        if method != "A" && supresswarn @warn("Method not A, for parallel design GLM (Method A) will be used!") end
-        esimator = "glm"
-        method = "A"
+        if estimator != "glm" && supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
+        if method != "P" && supresswarn @warn("Method not P (parallel), for parallel simple GLM model will be used!") end
+        estimator = "glm"
+        method = "P"
         if be.logt
             models = [@eval @formula($i ~ $(be.formulation)) for i in be.vars]
         else
             models = [@eval @formula(log($i) ~ $(be.formulation)) for i in be.vars]
         end
 
-    elseif design in (Symbol("2X2"), Symbol("2X2X2")) 
+    elseif design in ("2X2", "2X2X2") 
 
-        if method == "C" 
-            supresswarn && @warn("Method C can't be used with 2X2 design! Method A will be used...")
+        if method in ("P", "C") 
+            method == "C" && supresswarn && @warn("Method C can't be used with 2X2 design!..")
+            method == "P" && supresswarn && @warn("Method for parallel design can't be used with 2X2 design!..")
             if estimator == "glm"
                 supresswarn && @warn("Method A will be used...")
                 method = "A"
@@ -251,7 +329,7 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
                 method = "B"
             end
         end
-
+  
         if estimator == "glm"
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
@@ -403,6 +481,6 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
 
     end
 
-    BEResults(results, df)
+    BEResults(results, df, estimator, method)
     
 end
