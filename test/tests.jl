@@ -12,7 +12,7 @@ bedf2x2x4 = CSV.File(joinpath(path, "csv", "2x2x4rds1.csv")) |> DataFrame
 transform!(bedf2x2x4, :Subject => categorical, renamecols = false)
 transform!(bedf2x2x4, :Period => categorical, renamecols = false)
 
-@testset "  Test" begin
+@testset "  Basic test" begin
 
     @test MetidaBioeq.nomissing(bedf2x2x4, :logVar) == false
     @test MetidaBioeq.nomissing(bedf2x2x4, [:logVar]) == false
@@ -162,6 +162,10 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     @test_nowarn  MetidaBioeq.result(be2;  estimator = "met", method = "B")
 
 
+end
+
+@testset "  Validation" begin
+    # In plan
 end
 
 
