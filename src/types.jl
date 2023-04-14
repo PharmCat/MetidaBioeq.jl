@@ -7,6 +7,7 @@ struct Bioequivalence
     period
     formulation
     sequence
+    stage
     reference
     subjects
     periods
@@ -27,7 +28,7 @@ function Base.show(io::IO, obj::Bioequivalence)
     println(io, "Design: $(obj.design)")
     println(io, "Dropouts: $(obj.dropout)")
     println(io, "Subject: $(obj.subject) ($(length(obj.subjects)))")
-    print(io, "Formulation: $(obj.formulation)")
+    print(io, "Formulation: $(obj.formulation) ($(obj.formulations))")
     if isnothing(obj.formulations)
         println(io, ", Ref: $(obj.reference)")
     else
@@ -39,11 +40,14 @@ function Base.show(io::IO, obj::Bioequivalence)
         end
         print(io, ") Ref: $(obj.reference)")
     end
-    if !isnothing(obj.period) print(io, "\nPeriod: $(obj.period)") end
-    if !isnothing(obj.sequence) print(io, "\nSequence: $(obj.sequence)") end
+    if !isnothing(obj.period) print(io, "\nPeriod: $(obj.period) ($(obj.periods))") end
+    if !isnothing(obj.sequence) 
+        print(io, "\nSequence: $(obj.sequence) ($(obj.sequences))") 
+    end
+    if !isnothing(obj.stage) print(io, "\nStage: $(obj.stage)") end
 end
 
 function Base.show(io::IO, obj::BEResults)
     println(io, obj.df)
-    print(io, "Estimator: $(obj.estimator)")
+    print(io, "Estimator: $(obj.estimator) ($(obj.method))")
 end

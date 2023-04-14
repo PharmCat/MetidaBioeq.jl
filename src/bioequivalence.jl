@@ -26,6 +26,7 @@ end
     period = :period,
     formulation = :formulation,
     sequence = :sequence,
+    stage = nothing,
     reference = nothing,
     design = nothing,
     io::IO = stdout,
@@ -33,7 +34,17 @@ end
     dropcheck = true,
     logt = true)
 
-
+* `vars` - variabel's column(s);
+* `subject` - subject's column;
+* `period` - period's column;
+* `formulation` - formulation's column;
+* `sequence` -sequence's column;
+* `stage` - stage's column;
+* `reference` - reference value for `formulation` column;
+* `design` - design: "parallel", "2X2", "2X2X2", "2X2X4", ets. (formulations X sequences X periods);
+* `seqcheck` - check sequencs;     
+* `dropcheck` - dropuot check;
+* `logt` - if `true` (default) data is already log-transformed, else `log()` will be used.
 """
 function bioequivalence(data;
     vars = nothing,
@@ -41,6 +52,7 @@ function bioequivalence(data;
     period::Union{String, Symbol, Nothing} = nothing,
     formulation::Union{String, Symbol},
     sequence::Union{String, Symbol, Nothing} = nothing,
+    stage::Union{String, Symbol, Nothing} = nothing,
     reference::Union{String, Symbol, Nothing} = nothing,
     design::Union{String, Symbol, Nothing} = nothing,
     io::IO = stdout,
@@ -193,14 +205,21 @@ function bioequivalence(data;
             design = "$(length(formulations))X$(length(sequences))X$(length(periods))"
             info && @info  "Seems design type is: $design"
         else
+            if design == "2X2" design = "2X2X2" end
             spldes = split(design, "X")
-            if length(spldes) != 3 && design != "2X2" error("Unknown design type. Use fXsXp format or \"2Х2\".") end
+            if length(spldes) != 3 error("Unknown design type. Use fXsXp format or \"2Х2\".") end
             if length(formulations) != parse(Int, spldes[1]) error("Design error: formulations count wrong!") end
             if length(sequences) != parse(Int, spldes[2]) error("Design error: sequences count wrong!") end
             if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong!") end
             info && @info "Design type seems fine..."
         end
     end
+
+    if !isnothing(stage)
+        stage ⊆ dfnames || error("Stage column not found in dataframe!")
+        if !(design in ["parallel", "2X2", "2X2X2"]) @warn "Stage is defined but design not equal \"parallel\", \"2X2\" or \"2X2X2\"." end
+    end
+
     Bioequivalence(
         vars,
         data,
@@ -210,6 +229,7 @@ function bioequivalence(data;
         period,
         formulation,
         sequence,
+        stage,
         reference,
         subjects,
         periods,
@@ -267,22 +287,60 @@ end
 """
     result(be; estimator = "auto", method = "auto", supresswarn = false)
 
+`method` - Model settings.
+
+* if `method == "auto"` than method `A` used for "2X2" and "2X2X2"  designes, method `P` for "parallel" design and method `B` for any other.
+
+*Methods:*
+
+* `A` using GLM and model `@formula(var ~ formulation + period + sequence + subject)`
+* `B` using MixedModels and model `@formula(var ~ formulation + period + sequence + (1|subject))` or Metida and model `@lmmformula(v ~ formulation + period + sequence, random = 1|subject:SI)`
+* `C` using Metida and model `@lmmformula(v ~ formulation + period + sequence, random = formulation|subject:CSH, repeated = formulation|subject:DIAG)`
+* `P` using GLM and model `@formula(var ~ formulation)`
+
+`estimator` - Estimator settings.
+
+* if `estimator == "auto"` than GLM used for "parallel" design; for "2X2" design used GLM if no droputs and MixedModels if `dropout == true`; for other designes with method `C` Metida used and MixedModel for other cases.
+
+*Estimators:*
+
+* "glm" for GLM (https://juliastats.org/GLM.jl/stable/)
+* "mm" for MixedModels (https://juliastats.org/MixedModels.jl/stable/)
+* "met" for Metida (https://pharmcat.github.io/Metida.jl/stable/)
+
+*Other autosettings:*
+
+If design is "parallel" `estimator` set as "glm" and `method` as "P".
+
+
+If design is "2X2" and method is "P" or "C" than if `estimator` == "glm" method set as "A" and "B" for other estimators. 
+
+
+If design not "parallel" or "2X2": 
+
+if method not "A", "B" or "C" than set as "A" for "glm" ann as B for other estimators;
+
+if `estimator` == "glm" and `method` == "B" than `estimator` set as "mm", if `estimator` == "glm" or "mm" and `method` == "C" than `estimator` set as "met".
+
+
 Reference:
+
 EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE](https://www.ema.europa.eu/en/documents/scientific-guideline/guideline-investigation-bioequivalence-rev1_en.pdf)
+
 EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE, Annex I](https://www.ema.europa.eu/en/documents/other/31-annex-i-statistical-analysis-methods-compatible-ema-bioequivalence-guideline_en.pdf)
 
 """
-function result(be; estimator = "auto", method = "auto", supresswarn = false)
+function result(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
 
     length(be.formulations) > 2 &&  error("More than 2 formulations not supported yet")
     design = be.design
     if method == "auto"
         if design in ("2X2", "2X2X2") 
-            method == "A" 
+            method = "A" 
         elseif design == "parallel" 
-            method == "P"
+            method = "P"
         else
-            method == "B"  
+            method = "B"  
         end
     end
     # Define estimator: MixedModel / Metida / GLM
@@ -311,8 +369,8 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
     # MODEL SELECTION
     if design == "parallel"
 
-        if estimator != "glm" && supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
-        if method != "P" && supresswarn @warn("Method not P (parallel), for parallel simple GLM model will be used!") end
+        if estimator != "glm" && !supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
+        if method != "P" && !supresswarn @warn("Method not P (parallel), for parallel simple GLM model will be used!") end
         estimator = "glm"
         method = "P"
         if be.logt
@@ -324,13 +382,13 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
     elseif design in ("2X2", "2X2X2") 
 
         if method in ("P", "C") 
-            method == "C" && supresswarn && @warn("Method C can't be used with 2X2 design!..")
-            method == "P" && supresswarn && @warn("Method for parallel design can't be used with 2X2 design!..")
+            method == "C" && !supresswarn && @warn("Method C can't be used with 2X2 design!")
+            method == "P" && !supresswarn && @warn("Method for parallel design can't be used with 2X2 design!")
             if estimator == "glm"
-                supresswarn && @warn("Method A will be used...")
+                !supresswarn && @warn("Method A will be used!")
                 method = "A"
             else
-                supresswarn && @warn("Method B will be used...")
+                !supresswarn && @warn("Method B will be used!")
                 method = "B"
             end
         end
@@ -370,15 +428,24 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
         end
         
     else
+        if !(method in ("A", "B", "C"))
+            if estimator == "glm" 
+                !supresswarn && @warn("Method P or unknown, method changed to \"A\"!")
+                method = "A"
+            else
+                !supresswarn && @warn("Method P or unknown, method changed to \"B\"!")
+                method = "B"
+            end
+        end 
         if estimator == "glm" && method == "B"
-            supresswarn || @warn("Method B used, estimator changed to MixedModels.jl!")
-            estimator == "mm"
+            !supresswarn && @warn("Method B used, estimator changed to MixedModels.jl!")
+            estimator = "mm"
         elseif estimator == "glm" && method == "C"
-            supresswarn || @warn("Method C used, estimator changed to Metida.jl!")
-            estimator == "met"
+            !supresswarn && @warn("Method C used, estimator changed to Metida.jl!")
+            estimator = "met"
         elseif estimator == "mm" && method == "C"
-            supresswarn || @warn("Method C used, estimator changed to Metida.jl!")
-            estimator == "met"
+            !supresswarn && @warn("Method C used, estimator changed to Metida.jl!")
+            estimator = "met"
         end
 
         if estimator == "glm"
@@ -423,10 +490,10 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
 
         results = [fit(LinearModel, m, be.data; contrasts = Dict(be.formulation => DummyCoding(base = be.reference))) for m in models]
 
-        df = DataFrame(Parameter = [], Metric = [], PE = [], SE = [], DF = [], lnLCI = [], lnUCI = [], GMR = [], LCI = [], UCI = [])
+        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
             for i in results
                 DF = dof_residual(i)
-                CI = confint(i, 0.9)[2,:]
+                CI = confint(i, 1-2alpha)[2,:]
                 PE = coef(i)[2]
                 push!(df, (string(coefnames(i)[2], " - ", be.reference),
                     coefnames(i.mf.f.lhs),
@@ -437,7 +504,9 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
                     CI[2],
                     exp(PE),
                     exp(CI[1]),
-                    exp(CI[2])))
+                    exp(CI[2]),
+                    (1-2alpha)*100
+                    ))
             end
 
     # If Metida Used
@@ -460,14 +529,14 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
             error("Method A used or unknown method!")
         end
         # Take resulst from models
-        df = DataFrame(Parameter = [], Metric = [], PE = [], SE = [], DF = [], lnLCI = [], lnUCI = [], GMR = [], LCI = [], UCI = [])
+        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
         for i in results
             DF = dof_satter(i, 2)
             dist = TDist(DF)
             PE = coef(i)[2]
             SE = stderror(i)[2]
-            lnLCI = PE - SE * quantile(dist, 0.95)
-            lnUCI = PE + SE * quantile(dist, 0.95)
+            lnLCI = PE - SE * quantile(dist, 1-alpha)
+            lnUCI = PE + SE * quantile(dist, 1-alpha)
             push!(df, (string(coefnames(i)[2], " - ", be.reference),
                 coefnames(i.mf.f.lhs),
                 PE,
@@ -477,7 +546,9 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
                 lnUCI,
                 exp(PE),
                 exp(lnLCI),
-                exp(lnUCI)))
+                exp(lnUCI),
+                (1-2alpha)*100
+                ))
         end
 
     # If MixedModels Used
@@ -488,14 +559,14 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
         REML=true
         ) for m in models]
 
-        df = DataFrame(Parameter = [], Metric = [], PE = [], SE = [], DF = [], lnLCI = [], lnUCI = [], GMR = [], LCI = [], UCI = [])
+        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
         for i in results
             DF = nobs(i) - rank(hcat(i.X, i.reterms[1]))
             dist = TDist(DF)
             PE = coef(i)[2]
             SE = stderror(i)[2]
-            lnLCI = PE - SE * quantile(dist, 0.95)
-            lnUCI = PE + SE * quantile(dist, 0.95)
+            lnLCI = PE - SE * quantile(dist, 1-alpha)
+            lnUCI = PE + SE * quantile(dist, 1-alpha)
 
             push!(df, (string(coefnames(i)[2], " - ", be.reference),
                 responsename(i),
@@ -506,7 +577,9 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
                 lnUCI,
                 exp(PE),
                 exp(lnLCI),
-                exp(lnUCI)))
+                exp(lnUCI),
+                (1-2alpha)*100
+                ))
         end
 
 

@@ -1,6 +1,6 @@
 module MetidaBioeq
 
-using  MetidaBase, MetidaNCA, Metida, GLM, MixedModels, DataFrames, CategoricalArrays, Distributions, StatsBase
+using  MetidaNCA, Metida, GLM, MixedModels, DataFrames, CategoricalArrays, Distributions, StatsBase
 
 
 import Base: show
