@@ -1,5 +1,4 @@
-using Test
-using DataFrames, CSV, CategoricalArrays, StatsModels
+using Test, DataFrames, CSV, CategoricalArrays, StatsModels
 
 path     = dirname(@__FILE__)
 io       = IOBuffer();
@@ -29,6 +28,7 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     autoseq = true)
 
     berBmet  = MetidaBioeq.result(be;  estimator = "met", method = "B")
+    berBmet  = MetidaBioeq.result(be;  estimator = "met", method = "B")
     berCmet  = MetidaBioeq.result(be;  estimator = "met", method = "C")
     berBmm   = MetidaBioeq.result(be;  estimator = "mm", method = "B")
     berAglm  = MetidaBioeq.result(be;  estimator = "glm", method = "A")
@@ -54,6 +54,7 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     beBmm   = MetidaBioeq.result(be2;  estimator = "met", method = "B")
 
     bedf2x2.psbj = collect(1:size(bedf2x2, 1))
+    transform!(bedf2x2, :psbj => categorical, renamecols = false)
 
     be3 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :logVar, 
@@ -62,6 +63,22 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     autoseq = true)
 
     berPmm  = MetidaBioeq.result(be3;  estimator = "glm")
+
+
+    be2 = MetidaBioeq.bioequivalence(bedf2x2, 
+    vars = :Var, 
+    subject = :Subject, 
+    formulation = :Formulation, 
+    period = :Period,
+    sequence = :Sequence, 
+    autoseq = true,
+    logt = false)
+
+    beAglm  = MetidaBioeq.result(be2;  estimator = "glm", method = "A")
+    beBmm   = MetidaBioeq.result(be2;  estimator = "mm", method = "B")
+    beBmm   = MetidaBioeq.result(be2;  estimator = "met", method = "B")
+
+
 end
 
 

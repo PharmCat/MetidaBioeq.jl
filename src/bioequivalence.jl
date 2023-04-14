@@ -14,6 +14,11 @@ function nomissing(data, cols::AbstractVector)
     true
 end
 
+function functional_term(f, arg_expr...)
+	expr = Expr(:call, Symbol(f), arg_expr...)
+	eval(:(@formula 0 ~ $expr)).rhs
+end
+
 """
     bioquivalence(data;
     vars = nothing,
@@ -313,7 +318,7 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
         if be.logt
             models = [@eval @formula($i ~ $(be.formulation)) for i in be.vars]
         else
-            models = [@eval @formula(log($i) ~ $(be.formulation)) for i in be.vars]
+            models = [@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars]
         end
 
     elseif design in ("2X2", "2X2X2") 
@@ -334,19 +339,31 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
+                models = [begin 
+                    rfo =  @eval  @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
+                    lhs = functional_term(log, i)
+                    FormulaTerm(lhs, rfo.rhs) 
+                end for i in be.vars]
             end
         elseif estimator == "met"
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
+                models = [begin 
+                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence))
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs) 
+            end for i in be.vars]
             end
         elseif estimator == "mm"
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1|  $(be.subject) )) for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1|  $(be.subject) )) for i in be.vars]
+                models = [begin 
+                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs) 
+                end for i in be.vars]
             end
         else
             error("Unknown estimator!")
@@ -368,19 +385,33 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
+                models = [begin
+                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs)
+            end for i in be.vars]
             end
         elseif estimator == "met"
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
+                models = [begin 
+                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence))
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs) 
+                end for i in be.vars]
             end
         elseif estimator == "mm"
             if be.logt
                 models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))  for i in be.vars]
             else
-                models = [@eval @formula(log($i) ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))  for i in be.vars]
+                models = [begin 
+                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
+                lhs = functional_term(log, i)
+                #lhs = term(i)
+                FormulaTerm(lhs, rfo.rhs) 
+                end for i in be.vars]
+                
             end
         else
             error("Unknown estimator!")
@@ -398,7 +429,7 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
                 CI = confint(i, 0.9)[2,:]
                 PE = coef(i)[2]
                 push!(df, (string(coefnames(i)[2], " - ", be.reference),
-                    i.mf.f.lhs.sym,
+                    coefnames(i.mf.f.lhs),
                     PE,
                     stderror(i)[2],
                     DF,
@@ -438,7 +469,7 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false)
             lnLCI = PE - SE * quantile(dist, 0.95)
             lnUCI = PE + SE * quantile(dist, 0.95)
             push!(df, (string(coefnames(i)[2], " - ", be.reference),
-                i.mf.f.lhs.sym,
+                coefnames(i.mf.f.lhs),
                 PE,
                 SE,
                 DF,
