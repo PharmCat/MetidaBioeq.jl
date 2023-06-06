@@ -1,26 +1,26 @@
-struct Bioequivalence
+struct Bioequivalence{D}
     vars::AbstractVector
-    data
+    data::D
     design::String
-    dropout
+    dropout::Bool
     subject
     period
     formulation
     sequence
     stage
     reference
-    subjects
-    periods
-    formulations
-    sequences
-    logt
+    subjects::Vector
+    periods::Vector
+    formulations::Vector
+    sequences::Vector
+    logt::Bool
 end
 
 struct BEResults
-    models
-    df
-    estimator
-    method
+    models::Vector
+    df::DataFrame
+    estimator::String
+    method::String
 end
 
 function Base.show(io::IO, obj::Bioequivalence)
