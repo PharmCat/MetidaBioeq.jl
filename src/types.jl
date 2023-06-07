@@ -2,7 +2,7 @@ struct Bioequivalence{D}
     vars::AbstractVector
     data::D
     design::String
-    dropout::Bool
+    dropout::Union{Bool, Nothing}
     subject
     period
     formulation

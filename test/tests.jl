@@ -161,7 +161,6 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     @test_nowarn  MetidaBioeq.result(be2;  estimator = "mm", method = "B")
     @test_nowarn  MetidaBioeq.result(be2;  estimator = "met", method = "B")
 
-
 end
 
 @testset "  Validation" begin

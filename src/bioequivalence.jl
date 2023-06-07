@@ -113,8 +113,6 @@ function bioequivalence(data;
     end
 
     dropout   = nothing
-    periods   = nothing
-    sequences = nothing
 
     # For parallel design period and sequence are nothing
     if isnothing(period) && isnothing(sequence) && isnothing(design)
@@ -213,6 +211,9 @@ function bioequivalence(data;
             if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong!") end
             info && @info "Design type seems fine..."
         end
+    else
+        periods   = []
+        sequences = []
     end
 
     if !isnothing(stage)
