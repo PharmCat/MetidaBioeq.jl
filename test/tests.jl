@@ -29,13 +29,13 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     period = :Period,
     sequence = :Sequence, 
     autoseq = true)
-    berBmet  = MetidaBioeq.result(be;  estimator = "met", method = "B")
+    berBmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "B")
     @test berBmet.df[1,1] == "Formulation: T - R"
     @test berBmet.df[1,2] == "logVar"
     @test berBmet.df[1,:level] == 90.0
-    berCmet  = MetidaBioeq.result(be;  estimator = "met", method = "C")
-    berBmm   = MetidaBioeq.result(be;  estimator = "mm", method = "B")
-    berAglm  = MetidaBioeq.result(be;  estimator = "glm", method = "A")
+    berCmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "C")
+    berBmm   = MetidaBioeq.estimate(be;  estimator = "mm", method = "B")
+    berAglm  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
     @test berBmet.method  == "B"
     @test berBmet.estimator== "met"
     @test berCmet.method == "C"
@@ -45,23 +45,26 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     @test berAglm.method == "A"
     @test berAglm.estimator== "glm"
 
+    @test_nowarn MetidaBioeq.result(berCmet)
     # Inappropriate 
     # Try "glm" && "B" "C"
-    beres = MetidaBioeq.result(be;  estimator = "glm", method = "B")
+    beres = MetidaBioeq.estimate(be;  estimator = "glm", method = "B")
     @test beres.method  == "B"
     @test beres.estimator== "mm"
-    beres = MetidaBioeq.result(be;  estimator = "glm", method = "C")
+    beres = MetidaBioeq.estimate(be;  estimator = "glm", method = "C")
     @test beres.method  == "C"
     @test beres.estimator== "met"
-    beres = MetidaBioeq.result(be;  estimator = "mm", method = "C")
+    beres = MetidaBioeq.estimate(be;  estimator = "mm", method = "C")
     @test beres.method  == "C"
     @test beres.estimator== "met"
-    beres = MetidaBioeq.result(be;  estimator = "met", method = "P")
+    beres = MetidaBioeq.estimate(be;  estimator = "met", method = "P")
     @test beres.method  == "B"
     @test beres.estimator== "met"
-    beres = MetidaBioeq.result(be;  estimator = "mm", method = "P")
+    beres = MetidaBioeq.estimate(be;  estimator = "mm", method = "P")
     @test beres.method  == "B"
     @test beres.estimator== "mm"
+
+
 
     # Crossover design 2X2
     #
@@ -78,9 +81,9 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     period = :Period)
     @test bedf2x2.Sequence == bedf2x2seq
 
-    beAglm  = MetidaBioeq.result(be2;  estimator = "glm", method = "A")
-    beBmm   = MetidaBioeq.result(be2;  estimator = "mm", method = "B")
-    beBmet   = MetidaBioeq.result(be2;  estimator = "met", method = "B")
+    beAglm  = MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
+    beBmm   = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
+    beBmet   = MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
     @test beAglm.method  == "A"
     @test beAglm.estimator == "glm"
     @test beBmm.method  == "B"
@@ -98,19 +101,19 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     formulation = :Formulation, 
     autoseq = true)
 
-    berPglm  = MetidaBioeq.result(be3;  estimator = "glm")
+    berPglm  = MetidaBioeq.estimate(be3;  estimator = "glm")
     @test berPglm.method    == "P" 
     @test berPglm.estimator == "glm"
     
     # Inappropriate
     # Try mm and met
-    berPglm  = MetidaBioeq.result(be3;  estimator = "glm", method = "B")
+    berPglm  = MetidaBioeq.estimate(be3;  estimator = "glm", method = "B")
     @test berPglm.method    == "P" 
     @test berPglm.estimator == "glm"
-    berPglm  = MetidaBioeq.result(be3;  estimator = "mm")
+    berPglm  = MetidaBioeq.estimate(be3;  estimator = "mm")
     @test berPglm.method    == "P" 
     @test berPglm.estimator == "glm"
-    berPglm  = MetidaBioeq.result(be3;  estimator = "met")
+    berPglm  = MetidaBioeq.estimate(be3;  estimator = "met")
     @test berPglm.method    == "P" 
     @test berPglm.estimator == "glm"
 
@@ -128,10 +131,10 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
 
     # 2x2
     # 
-    beAglm  = MetidaBioeq.result(be2;  estimator = "glm", method = "A")
+    beAglm  = MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
     @test beAglm.df[1,2] == "log(Var)"
-    beBmm   = MetidaBioeq.result(be2;  estimator = "mm", method = "B")
-    beBmet  = MetidaBioeq.result(be2;  estimator = "met", method = "B")
+    beBmm   = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
+    beBmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
     @test beAglm.method == "A"
     @test beAglm.estimator == "glm"
     @test beBmm.method == "B"
@@ -141,10 +144,10 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
 
     # Inappropriate
     # Try C
-    beBmet   = MetidaBioeq.result(be2;  estimator = "met", method = "C")
+    beBmet   = MetidaBioeq.estimate(be2;  estimator = "met", method = "C")
     @test beBmet.method == "B"
     @test beBmet.estimator == "met"
-    beAglm   = MetidaBioeq.result(be2;  estimator = "glm", method = "P")
+    beAglm   = MetidaBioeq.estimate(be2;  estimator = "glm", method = "P")
     @test beAglm.method == "A"
     @test beAglm.estimator == "glm"
 
@@ -156,11 +159,10 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     reference = "T",
     period = :Period,
     sequence = :Sequence)
-    beres =  MetidaBioeq.result(be2;  estimator = "glm", method = "A")
+    beres =  MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
     @test beres.df[1,1] == "Formulation: R - T"
-    @test_nowarn  MetidaBioeq.result(be2;  estimator = "mm", method = "B")
-    @test_nowarn  MetidaBioeq.result(be2;  estimator = "met", method = "B")
-
+    @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
+    @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
 
 end
 

@@ -113,8 +113,6 @@ function bioequivalence(data;
     end
 
     dropout   = nothing
-    periods   = nothing
-    sequences = nothing
 
     # For parallel design period and sequence are nothing
     if isnothing(period) && isnothing(sequence) && isnothing(design)
@@ -213,6 +211,9 @@ function bioequivalence(data;
             if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong!") end
             info && @info "Design type seems fine..."
         end
+    else
+        periods   = []
+        sequences = []
     end
 
     if !isnothing(stage)
@@ -285,7 +286,7 @@ function makeseq(data;
 end
 
 """
-    result(be; estimator = "auto", method = "auto", supresswarn = false)
+    estimate(be; estimator = "auto", method = "auto", supresswarn = false)
 
 `method` - Model settings.
 
@@ -330,7 +331,7 @@ EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE](https://www.ema.europa.e
 EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE, Annex I](https://www.ema.europa.eu/en/documents/other/31-annex-i-statistical-analysis-methods-compatible-ema-bioequivalence-guideline_en.pdf)
 
 """
-function result(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
+function estimate(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
 
     length(be.formulations) > 2 &&  error("More than 2 formulations not supported yet")
     design = be.design
@@ -584,7 +585,9 @@ function result(be; estimator = "auto", method = "auto", supresswarn = false, al
 
 
     end
-
     BEResults(results, df, estimator, method)
-    
+end
+
+function result(beres::BEResults)
+    beres.df
 end
