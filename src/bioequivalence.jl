@@ -588,6 +588,11 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     BEResults(results, df, estimator, method)
 end
 
+"""
+    result(beres::BEResults)
+
+Returns dataframe with bioequivalence results.
+"""
 function result(beres::BEResults)
     beres.df
 end
