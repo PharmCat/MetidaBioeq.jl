@@ -4,7 +4,11 @@
 bedf2x2 = CSV.File(joinpath(dirname(pathof(MetidaBioeq)), &quot;..&quot;, &quot;test&quot;, &quot;csv&quot;,  &quot;2x2rds1.csv&quot;)) |&gt; DataFrame
 transform!(bedf2x2, :Subject =&gt; categorical, renamecols = false)
 transform!(bedf2x2, :Period =&gt; categorical, renamecols = false)
-bedf2x2.logVar = log.(bedf2x2.Var)</code></pre><h3 id="Data"><a class="docs-heading-anchor" href="#Data">Data</a><a id="Data-1"></a><a class="docs-heading-anchor-permalink" href="#Data" title="Permalink"></a></h3><pre><code class="language-julia hljs">bedf2x2[1:5, :]</code></pre><div><div style = "float: left;"><span>5×6 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "header"><th class = "rowNumber" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Subject</th><th style = "text-align: left;">Sequence</th><th style = "text-align: left;">Period</th><th style = "text-align: left;">Formulation</th><th style = "text-align: left;">Var</th><th style = "text-align: left;">logVar</th></tr><tr class = "subheader headerLastRow"><th class = "rowNumber" style = "font-weight: bold; text-align: right;"></th><th title = "CategoricalArrays.CategoricalValue{Int64, UInt32}" style = "text-align: left;">Cat…</th><th title = "InlineStrings.String3" style = "text-align: left;">String3</th><th title = "CategoricalArrays.CategoricalValue{Int64, UInt32}" style = "text-align: left;">Cat…</th><th title = "InlineStrings.String1" style = "text-align: left;">String1</th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th></tr></thead><tbody><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">3</td><td style = "text-align: left;">TR</td><td style = "text-align: left;">1</td><td style = "text-align: left;">T</td><td style = "text-align: right;">225.95</td><td style = "text-align: right;">5.42031</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">1</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">181.09</td><td style = "text-align: right;">5.19899</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">2</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">114.48</td><td style = "text-align: right;">4.7404</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">4</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">176.91</td><td style = "text-align: right;">5.17564</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">5</td><td style = "text-align: left;">TR</td><td style = "text-align: left;">1</td><td style = "text-align: left;">T</td><td style = "text-align: right;">147.01</td><td style = "text-align: right;">4.9905</td></tr></tbody></table></div><h3 id="BE-object"><a class="docs-heading-anchor" href="#BE-object">BE object</a><a id="BE-object-1"></a><a class="docs-heading-anchor-permalink" href="#BE-object" title="Permalink"></a></h3><pre><code class="language-julia hljs">    be2 = MetidaBioeq.bioequivalence(bedf2x2,
+bedf2x2.logVar = log.(bedf2x2.Var)
+
+bedf2x2x4 = CSV.File(joinpath(dirname(pathof(MetidaBioeq)), &quot;..&quot;, &quot;test&quot;, &quot;csv&quot;,  &quot;2x2x4rds1.csv&quot;)) |&gt; DataFrame
+transform!(bedf2x2x4, :Subject =&gt; categorical, renamecols = false)
+transform!(bedf2x2x4, :Period =&gt; categorical, renamecols = false)</code></pre><h3 id="Data"><a class="docs-heading-anchor" href="#Data">Data</a><a id="Data-1"></a><a class="docs-heading-anchor-permalink" href="#Data" title="Permalink"></a></h3><pre><code class="language-julia hljs">bedf2x2[1:5, :]</code></pre><div><div style = "float: left;"><span>5×6 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "header"><th class = "rowNumber" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Subject</th><th style = "text-align: left;">Sequence</th><th style = "text-align: left;">Period</th><th style = "text-align: left;">Formulation</th><th style = "text-align: left;">Var</th><th style = "text-align: left;">logVar</th></tr><tr class = "subheader headerLastRow"><th class = "rowNumber" style = "font-weight: bold; text-align: right;"></th><th title = "CategoricalArrays.CategoricalValue{Int64, UInt32}" style = "text-align: left;">Cat…</th><th title = "InlineStrings.String3" style = "text-align: left;">String3</th><th title = "CategoricalArrays.CategoricalValue{Int64, UInt32}" style = "text-align: left;">Cat…</th><th title = "InlineStrings.String1" style = "text-align: left;">String1</th><th title = "Float64" style = "text-align: left;">Float64</th><th title = "Float64" style = "text-align: left;">Float64</th></tr></thead><tbody><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">3</td><td style = "text-align: left;">TR</td><td style = "text-align: left;">1</td><td style = "text-align: left;">T</td><td style = "text-align: right;">225.95</td><td style = "text-align: right;">5.42031</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">1</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">181.09</td><td style = "text-align: right;">5.19899</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">2</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">114.48</td><td style = "text-align: right;">4.7404</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">4</td><td style = "text-align: left;">RT</td><td style = "text-align: left;">1</td><td style = "text-align: left;">R</td><td style = "text-align: right;">176.91</td><td style = "text-align: right;">5.17564</td></tr><tr><td class = "rowNumber" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">5</td><td style = "text-align: left;">TR</td><td style = "text-align: left;">1</td><td style = "text-align: left;">T</td><td style = "text-align: right;">147.01</td><td style = "text-align: right;">4.9905</td></tr></tbody></table></div><h3 id="BE-object"><a class="docs-heading-anchor" href="#BE-object">BE object</a><a id="BE-object-1"></a><a class="docs-heading-anchor-permalink" href="#BE-object" title="Permalink"></a></h3><p>Simple 2x2 study. Data (<code>var</code>) not log-transgormed.</p><pre><code class="language-julia hljs">    be1 = MetidaBioeq.bioequivalence(bedf2x2,
     vars = :Var,
     subject = :Subject,
     formulation = :Formulation,
@@ -19,4 +23,95 @@ Dropouts: false
 Subject: Subject (18)
 Formulation: Formulation (InlineStrings.String1[&quot;R&quot;, &quot;T&quot;]) (R, T) Ref: R
 Period: Period ([1, 2])
-Sequence: Sequence (InlineStrings.String3[&quot;TR&quot;, &quot;RT&quot;])</code></pre><h3 id="Estimation"><a class="docs-heading-anchor" href="#Estimation">Estimation</a><a id="Estimation-1"></a><a class="docs-heading-anchor-permalink" href="#Estimation" title="Permalink"></a></h3><h4 id="GLM"><a class="docs-heading-anchor" href="#GLM">GLM</a><a id="GLM-1"></a><a class="docs-heading-anchor-permalink" href="#GLM" title="Permalink"></a></h4><pre><code class="language- hljs">    beAglm  = MetidaBioeq.result(be2;  estimator = &quot;glm&quot;, method = &quot;A&quot;)</code></pre><pre><code class="language- hljs">    beAglm.models[1]</code></pre><h4 id="MixedModels"><a class="docs-heading-anchor" href="#MixedModels">MixedModels</a><a id="MixedModels-1"></a><a class="docs-heading-anchor-permalink" href="#MixedModels" title="Permalink"></a></h4><pre><code class="language- hljs">    beBmm  = MetidaBioeq.result(be2;  estimator = &quot;mm&quot;, method = &quot;B&quot;)</code></pre><pre><code class="language- hljs">    beBmm.models[1]</code></pre><h4 id="Metida"><a class="docs-heading-anchor" href="#Metida">Metida</a><a id="Metida-1"></a><a class="docs-heading-anchor-permalink" href="#Metida" title="Permalink"></a></h4><pre><code class="language- hljs">    beBmet  = MetidaBioeq.result(be2;  estimator = &quot;met&quot;, method = &quot;B&quot;)</code></pre><pre><code class="language- hljs">    beBmet.models[1]</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 20 June 2023 17:57">Tuesday 20 June 2023</span>. Using Julia version 1.9.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Sequence: Sequence (InlineStrings.String3[&quot;TR&quot;, &quot;RT&quot;])</code></pre><p>Replicate design 2x2x4 study. Data (<code>logVat</code>) already log-transformed.</p><pre><code class="language-julia hljs">    be2 = MetidaBioeq.bioequivalence(bedf2x2x4,
+    vars = :logVar,
+    subject = :Subject,
+    formulation = :Formulation,
+    period = :Period,
+    sequence = :Sequence,
+    reference = &quot;R&quot;,
+    autoseq = true,
+    logt = true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Bioequivalence object:
+Design: 2X2X4
+Dropouts: true
+Subject: Subject (77)
+Formulation: Formulation (InlineStrings.String1[&quot;R&quot;, &quot;T&quot;]) (R, T) Ref: R
+Period: Period ([1, 2, 3, 4])
+Sequence: Sequence (InlineStrings.String7[&quot;RTRT&quot;, &quot;TRTR&quot;])</code></pre><h3 id="Estimation"><a class="docs-heading-anchor" href="#Estimation">Estimation</a><a id="Estimation-1"></a><a class="docs-heading-anchor-permalink" href="#Estimation" title="Permalink"></a></h3><h4 id="GLM"><a class="docs-heading-anchor" href="#GLM">GLM</a><a id="GLM-1"></a><a class="docs-heading-anchor-permalink" href="#GLM" title="Permalink"></a></h4><p>Estimation witn GLM (simple model).</p><pre><code class="language-julia hljs">    beAglm  = MetidaBioeq.estimate(be1;  estimator = &quot;glm&quot;, method = &quot;A&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×11 DataFrame
+ Row │ Parameter           Metric    PE          SE        DF       lnLCI      ⋯
+     │ String              String    Float64     Float64   Float64  Float64    ⋯
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ Formulation: T - R  log(Var)  -0.0503868  0.026658     16.0  -0.0969286 ⋯
+                                                               5 columns omitted
+Estimator: glm (A)</code></pre><pre><code class="language-julia hljs">    beAglm.models[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">StatsModels.TableRegressionModel{GLM.LinearModel{GLM.LmResp{Vector{Float64}}, GLM.DensePredChol{Float64, LinearAlgebra.CholeskyPivoted{Float64, Matrix{Float64}, Vector{Int64}}}}, Matrix{Float64}}
+
+:(log(Var)) ~ 1 + Formulation + Period + Sequence + Subject
+
+Coefficients:
+─────────────────────────────────────────────────────────────────────────────────────
+                     Coef.   Std. Error       t  Pr(&gt;|t|)     Lower 95%     Upper 95%
+─────────────────────────────────────────────────────────────────────────────────────
+(Intercept)      5.26309      0.0596091   88.29    &lt;1e-22    5.13672       5.38945
+Formulation: T  -0.0503868    0.026658    -1.89    0.0770   -0.106899      0.00612568
+Period: 2        0.0709849    0.026658     2.66    0.0170    0.0144724     0.127497
+Sequence: TR    -0.471931     0.079974    -5.90    &lt;1e-04   -0.641469     -0.302394
+Subject: 2      -0.60704      0.079974    -7.59    &lt;1e-05   -0.776578     -0.437503
+Subject: 3       0.651289     0.079974     8.14    &lt;1e-06    0.481752      0.820827
+Subject: 4      -0.0709459    0.079974    -0.89    0.3882   -0.240483      0.0985915
+Subject: 5       0.163045     0.079974     2.04    0.0584   -0.00649258    0.332582
+Subject: 6      -0.0981368    0.079974    -1.23    0.2375   -0.267674      0.0714006
+Subject: 7      -0.317282     0.079974    -3.97    0.0011   -0.486819     -0.147745
+Subject: 8      -0.864003     0.079974   -10.80    &lt;1e-08   -1.03354      -0.694466
+Subject: 9      -0.458263     0.079974    -5.73    &lt;1e-04   -0.627801     -0.288726
+Subject: 10     -0.461259     0.079974    -5.77    &lt;1e-04   -0.630796     -0.291721
+Subject: 11     -0.161922     0.079974    -2.02    0.0599   -0.331459      0.00761585
+Subject: 12      0.178699     0.079974     2.23    0.0401    0.00916133    0.348236
+Subject: 13      0.241743     0.079974     3.02    0.0081    0.0722058     0.411281
+Subject: 14      0.394412     0.079974     4.93    0.0002    0.224874      0.563949
+Subject: 15      0.44321      0.079974     5.54    &lt;1e-04    0.273672      0.612747
+Subject: 16     -0.306182     0.079974    -3.83    0.0015   -0.475719     -0.136644
+Subject: 17     -0.0336157    0.079974    -0.42    0.6798   -0.203153      0.135922
+Subject: 18      0.0        NaN          NaN       NaN     NaN           NaN
+─────────────────────────────────────────────────────────────────────────────────────</code></pre><h4 id="MixedModels"><a class="docs-heading-anchor" href="#MixedModels">MixedModels</a><a id="MixedModels-1"></a><a class="docs-heading-anchor-permalink" href="#MixedModels" title="Permalink"></a></h4><p>Estimation witn MixedModels.jl (method B).</p><pre><code class="language-julia hljs">    beBmm  = MetidaBioeq.estimate(be2;  estimator = &quot;mm&quot;, method = &quot;B&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×11 DataFrame
+ Row │ Parameter           Metric  PE        SE        DF       lnLCI      lnU ⋯
+     │ String              String  Float64   Float64   Float64  Float64    Flo ⋯
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ Formulation: T - R  logVar  0.146088  0.046513    217.0  0.0692531  0.2 ⋯
+                                                               5 columns omitted
+Estimator: mm (B)</code></pre><pre><code class="language-julia hljs">    beBmm.models[1]</code></pre><table><tr><th align="left"></th><th align="right">Est.</th><th align="right">SE</th><th align="right">z</th><th align="right">p</th><th align="right">σ_Subject</th></tr><tr><td align="left">&#40;Intercept&#41;</td><td align="right">7.6512</td><td align="right">0.1477</td><td align="right">51.80</td><td align="right">&lt;1e-99</td><td align="right">0.8408</td></tr><tr><td align="left">Formulation: T</td><td align="right">0.1461</td><td align="right">0.0465</td><td align="right">3.14</td><td align="right">0.0017</td><td align="right"> </td></tr><tr><td align="left">Period: 2</td><td align="right">0.0235</td><td align="right">0.0648</td><td align="right">0.36</td><td align="right">0.7173</td><td align="right"> </td></tr><tr><td align="left">Period: 3</td><td align="right">0.0040</td><td align="right">0.0666</td><td align="right">0.06</td><td align="right">0.9519</td><td align="right"> </td></tr><tr><td align="left">Period: 4</td><td align="right">0.0912</td><td align="right">0.0651</td><td align="right">1.40</td><td align="right">0.1615</td><td align="right"> </td></tr><tr><td align="left">Sequence: TRTR</td><td align="right">-0.0216</td><td align="right">0.1973</td><td align="right">-0.11</td><td align="right">0.9129</td><td align="right"> </td></tr><tr><td align="left">Residual</td><td align="right">0.4001</td><td align="right"></td><td align="right"></td><td align="right"></td><td align="right"></td></tr></table>
+<h4 id="Metida"><a class="docs-heading-anchor" href="#Metida">Metida</a><a id="Metida-1"></a><a class="docs-heading-anchor-permalink" href="#Metida" title="Permalink"></a></h4><p>Estimation witn Metida.jl (method C).</p><pre><code class="language-julia hljs">    beBmet  = MetidaBioeq.estimate(be2;  estimator = &quot;met&quot;, method = &quot;C&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1×11 DataFrame
+ Row │ Parameter           Metric  PE        SE         DF       lnLCI      ln ⋯
+     │ String              String  Float64   Float64    Float64  Float64    Fl ⋯
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ Formulation: T - R  logVar  0.145464  0.0465012  208.081  0.0686345  0. ⋯
+                                                               5 columns omitted
+Estimator: met (C)</code></pre><pre><code class="language-julia hljs">    beBmet.models[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Linear Mixed Model: logVar ~ Formulation + Period + Sequence
+Random 1: 
+    Model: Formulation|Subject
+    Type: CSH (3), Subjects: 77
+Repeated: 
+    Model: Formulation|Subject
+    Type: DIAG (2)
+Blocks: 77, Maximum block size: 4
+Status: converged (No Errors)
+    -2 logREML: 530.145    BIC: 558.562
+
+    Fixed-effects parameters:
+────────────────────────────────────────────────────────
+                      Coef.  Std. Error      z  Pr(&gt;|z|)
+────────────────────────────────────────────────────────
+(Intercept)      7.64968      0.151214   50.59    &lt;1e-99
+Formulation: T   0.145464     0.0465012   3.13    0.0018
+Period: 2        0.0446377    0.0636371   0.70    0.4830
+Period: 3        0.00659021   0.0644219   0.10    0.9185
+Period: 4        0.0727201    0.0639714   1.14    0.2556
+Sequence: TRTR  -0.0204707    0.197223   -0.10    0.9173
+────────────────────────────────────────────────────────
+    Variance components:
+    θ vector: [0.852995, 0.828407, 1.0, 0.449575, 0.342628]
+  Random 1   σ² Formulation: R   var   0.7276
+  Random 1   σ² Formulation: T   var   0.686258
+  Random 1   ρ                   rho   1.0
+  Residual   σ² Formulation: R   var   0.202118
+  Residual   σ² Formulation: T   var   0.117394
+</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Wednesday 19 July 2023 13:43">Wednesday 19 July 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
