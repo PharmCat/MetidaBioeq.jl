@@ -8,6 +8,10 @@ transform!(bedf2x2, :Subject => categorical, renamecols = false)
 transform!(bedf2x2, :Period => categorical, renamecols = false)
 bedf2x2.logVar = log.(bedf2x2.Var)
 
+bedf2x2x4 = CSV.File(joinpath(dirname(pathof(MetidaBioeq)), "..", "test", "csv",  "2x2x4rds1.csv")) |> DataFrame
+transform!(bedf2x2x4, :Subject => categorical, renamecols = false)
+transform!(bedf2x2x4, :Period => categorical, renamecols = false)
+
 nothing; # hide
 ```
 
@@ -19,8 +23,10 @@ bedf2x2[1:5, :]
 
 ### BE object
 
+Simple 2x2 study. Data (`var`) not log-transgormed.
+
 ```@example beexample
-    be2 = MetidaBioeq.bioequivalence(bedf2x2, 
+    be1 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :Var, 
     subject = :Subject, 
     formulation = :Formulation, 
@@ -32,12 +38,28 @@ bedf2x2[1:5, :]
     logt = false)
 ```
 
+Replicate design 2x2x4 study. Data (`logVat`) already log-transformed.
+
+```@example beexample
+    be2 = MetidaBioeq.bioequivalence(bedf2x2x4, 
+    vars = :logVar, 
+    subject = :Subject, 
+    formulation = :Formulation, 
+    period = :Period,
+    sequence = :Sequence, 
+    reference = "R",
+    autoseq = true,
+    logt = true)
+```
+
 ### Estimation 
 
 #### GLM
 
+Estimation witn GLM (simple model).
+
 ```@example beexample
-    beAglm  = MetidaBioeq.result(be2;  estimator = "glm", method = "A")
+    beAglm  = MetidaBioeq.estimate(be1;  estimator = "glm", method = "A")
 ```
 
 ```@example beexample
@@ -47,8 +69,10 @@ bedf2x2[1:5, :]
 
 #### MixedModels
 
+Estimation witn MixedModels.jl (method B).
+
 ```@example beexample
-    beBmm  = MetidaBioeq.result(be2;  estimator = "mm", method = "B")
+    beBmm  = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
 ```
 
 ```@example beexample
@@ -57,8 +81,10 @@ bedf2x2[1:5, :]
 
 #### Metida
 
+Estimation witn Metida.jl (method C).
+
 ```@example beexample
-    beBmet  = MetidaBioeq.result(be2;  estimator = "met", method = "B")
+    beBmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "C")
 ```
 
 ```@example beexample

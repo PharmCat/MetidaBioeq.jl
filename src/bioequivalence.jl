@@ -503,9 +503,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                     DF,
                     CI[1],
                     CI[2],
-                    exp(PE),
-                    exp(CI[1]),
-                    exp(CI[2]),
+                    exp(PE)*100,
+                    exp(CI[1])*100,
+                    exp(CI[2])*100,
                     (1-2alpha)*100
                     ))
             end
@@ -545,9 +545,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 DF,
                 lnLCI,
                 lnUCI,
-                exp(PE),
-                exp(lnLCI),
-                exp(lnUCI),
+                exp(PE)*100,
+                exp(lnLCI)*100,
+                exp(lnUCI)*100,
                 (1-2alpha)*100
                 ))
         end
@@ -576,9 +576,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 DF,
                 lnLCI,
                 lnUCI,
-                exp(PE),
-                exp(lnLCI),
-                exp(lnUCI),
+                exp(PE)*100,
+                exp(lnLCI)*100,
+                exp(lnUCI)*100,
                 (1-2alpha)*100
                 ))
         end
@@ -588,6 +588,11 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     BEResults(results, df, estimator, method)
 end
 
+"""
+    result(beres::BEResults)
+
+Returns dataframe with bioequivalence results.
+"""
 function result(beres::BEResults)
     beres.df
 end
