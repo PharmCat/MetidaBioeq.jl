@@ -3,7 +3,7 @@ using Test, DataFrames, CSV, CategoricalArrays, StatsModels
 path     = dirname(@__FILE__)
 io       = IOBuffer();
 
-bedf2x2 = CSV.File(joinpath(path, "csv", "2x2rds1.csv")) |> DataFrame
+rds1 = bedf2x2 = CSV.File(joinpath(path, "csv", "2x2rds1.csv")) |> DataFrame
 transform!(bedf2x2, :Subject => categorical, renamecols = false)
 transform!(bedf2x2, :Period => categorical, renamecols = false)
 bedf2x2.logVar = log.(bedf2x2.Var)
@@ -166,8 +166,179 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
 
 end
 
+rds2 = CSV.File(joinpath(path, "csv", "2x2rds2.csv")) |> DataFrame
+transform!(rds2, :Subj => categorical, renamecols = false)
+transform!(rds2, :Per => categorical, renamecols = false)
+rds2.logVar = log.(rds2.Var)
+
+rds3 = CSV.File(joinpath(path, "csv", "2x2rds3.csv")) |> DataFrame
+transform!(rds3, :Subj => categorical, renamecols = false)
+transform!(rds3, :Per => categorical, renamecols = false)
+rds3.logVar = log.(rds3.Var)
+
+rds4 = CSV.File(joinpath(path, "csv", "2x2rds4.csv")) |> DataFrame
+transform!(rds4, :Subj => categorical, renamecols = false)
+transform!(rds4, :Per => categorical, renamecols = false)
+rds4.logVar = log.(rds4.Var)
+
+rds5 = CSV.File(joinpath(path, "csv", "2x2rds5.csv")) |> DataFrame
+transform!(rds5, :Subj => categorical, renamecols = false)
+transform!(rds5, :Per => categorical, renamecols = false)
+rds5.logVar = log.(rds5.Var)
+
+rds6 = CSV.File(joinpath(path, "csv", "2x2rds6.csv")) |> DataFrame
+transform!(rds6, :Subj => categorical, renamecols = false)
+transform!(rds6, :Per => categorical, renamecols = false)
+rds6.logVar = log.(rds6.Var)
+
+rds7 = CSV.File(joinpath(path, "csv", "2x2rds7.csv")) |> DataFrame
+transform!(rds7, :Subj => categorical, renamecols = false)
+transform!(rds7, :Per => categorical, renamecols = false)
+rds7.logVar = log.(rds7.Var)
+
+rds8 = CSV.File(joinpath(path, "csv", "2x2rds8.csv")) |> DataFrame
+transform!(rds8, :Subj => categorical, renamecols = false)
+transform!(rds8, :Per => categorical, renamecols = false)
+rds8.logVar = log.(rds8.Var)
+
 @testset "  Validation" begin
-    # In plan
+    # RDS 1
+    be = MetidaBioeq.bioequivalence(rds1, 
+    vars = :Var, 
+    subject = :Subject, 
+    formulation = :Formulation, 
+    period = :Period,
+    sequence = :Sequence, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 95.09, atol = 0.01)
+    @test isapprox(df.LCI[1], 90.76, atol = 0.01) 
+    @test isapprox(df.UCI[1], 99.62, atol = 0.01)
+
+    # RDS 2
+    be = MetidaBioeq.bioequivalence(rds2, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 71.10, atol = 0.01)
+    @test isapprox(df.LCI[1], 51.45, atol = 0.01) 
+    @test isapprox(df.UCI[1], 98.26, atol = 0.01)
+
+    # RDS 3
+    be = MetidaBioeq.bioequivalence(rds3, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 58.56, atol = 0.01)
+    @test isapprox(df.LCI[1], 39.41, atol = 0.01) 
+    @test isapprox(df.UCI[1], 87.03, atol = 0.01)
+
+    # RDS 4
+    be = MetidaBioeq.bioequivalence(rds4, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 71.10, atol = 0.01)
+    @test isapprox(df.LCI[1], 51.45, atol = 0.01) 
+    @test isapprox(df.UCI[1], 98.26, atol = 0.01)
+
+
+    # RDS 5
+    be = MetidaBioeq.bioequivalence(rds5, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 91.83, atol = 0.01)
+    @test isapprox(df.LCI[1], 55.71, atol = 0.01) 
+    @test isapprox(df.UCI[1], 151.37, atol = 0.01)
+
+    # RDS 6
+    be = MetidaBioeq.bioequivalence(rds6, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 99.89, atol = 0.01)
+    @test isapprox(df.LCI[1], 93.37, atol = 0.01) 
+    @test isapprox(df.UCI[1], 106.86, atol = 0.01)
+
+    # RDS 7
+    be = MetidaBioeq.bioequivalence(rds7, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 92.15, atol = 0.01)
+    @test isapprox(df.LCI[1], 88.46, atol = 0.01) 
+    @test isapprox(df.UCI[1], 95.99, atol = 0.01)
+
+    # RDS 8
+    be = MetidaBioeq.bioequivalence(rds8, 
+    vars = :Var, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
+    design = "2x2",
+    autoseq = true,
+    logt = false)
+    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+    df     = MetidaBioeq.result(beres)
+
+    @test isapprox(df.GMR[1], 93.42, atol = 0.01)
+    @test isapprox(df.LCI[1], 86.81, atol = 0.01) 
+    @test isapprox(df.UCI[1], 100.55, atol = 0.01)
+
 end
 
 

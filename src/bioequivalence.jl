@@ -489,7 +489,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     # If GLM used 
     if estimator == "glm"
 
-        results = [fit(LinearModel, m, be.data; contrasts = Dict(be.formulation => DummyCoding(base = be.reference))) for m in models]
+        results = [fit(LinearModel, m, be.data; contrasts = Dict(be.formulation => DummyCoding(base = be.reference)), dropcollinear = true) for m in models]
 
         df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
             for i in results
