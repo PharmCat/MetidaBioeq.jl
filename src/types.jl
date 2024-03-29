@@ -18,7 +18,7 @@ end
 
 struct BEResults
     models::Vector
-    df::DataFrame
+    df::Dict
     estimator::String
     method::String
 end
@@ -48,6 +48,7 @@ function Base.show(io::IO, obj::Bioequivalence)
 end
 
 function Base.show(io::IO, obj::BEResults)
-    println(io, obj.df)
+    println(io, "  Result:")
+    println(io, obj.df[:result])
     print(io, "Estimator: $(obj.estimator) ($(obj.method))")
 end

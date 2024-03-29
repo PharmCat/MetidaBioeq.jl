@@ -57,6 +57,7 @@ function bioequivalence(data;
     design::Union{String, Symbol, Nothing} = nothing,
     io::IO = stdout,
     seqcheck::Bool = true,
+    designcheck::Bool = true,
     dropcheck::Bool = true,
     info::Bool = true,
     warns::Bool = true,
@@ -189,7 +190,7 @@ function bioequivalence(data;
         if seqcheck && !isnothing(sequence)
             for i = 1:obsnum
                 if getcol(data, sequence)[i] != subjdict[getcol(data, subject)[i]]
-                    error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]])")
+                    error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]]), use `seqcheck = false` keyword to disable sequence check.")
                 end
             end
             if length(unique(length.(sequences))) > 1
@@ -202,13 +203,13 @@ function bioequivalence(data;
             info && @info "Trying to find out the design..."
             design = "$(length(formulations))X$(length(sequences))X$(length(periods))"
             info && @info  "Seems design type is: $design"
-        else
+        elseif designcheck
             if design == "2X2" design = "2X2X2" end
             spldes = split(design, "X")
             if length(spldes) != 3 error("Unknown design type. Use fXsXp format or \"2Х2\".") end
             if length(formulations) != parse(Int, spldes[1]) error("Design error: formulations count wrong!") end
             if length(sequences) != parse(Int, spldes[2]) error("Design error: sequences count wrong!") end
-            if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong!") end
+            if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong! length(periods) = $(length(periods)), desigh = $design , use `designcheck = false` keyword to disable design check.") end
             info && @info "Design type seems fine..."
         end
     else
@@ -366,8 +367,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
 
         end
     end
-    
+    ##############################
     # MODEL SELECTION
+    ##############################
     if design == "parallel"
 
         if estimator != "glm" && !supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
@@ -457,7 +459,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
                 lhs = functional_term(log, i)
                 FormulaTerm(lhs, rfo.rhs)
-            end for i in be.vars]
+                end for i in be.vars]
             end
         elseif estimator == "met"
             if be.logt
@@ -476,7 +478,6 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 models = [begin 
                 rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
                 lhs = functional_term(log, i)
-                #lhs = term(i)
                 FormulaTerm(lhs, rfo.rhs) 
                 end for i in be.vars]
                 
@@ -486,6 +487,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         end
     end
     
+    ####################################
+    # ESTIMATION (fitting)
+    ####################################
     # If GLM used 
     if estimator == "glm"
 
@@ -583,9 +587,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 ))
         end
 
-
     end
-    BEResults(results, df, estimator, method)
+    BEResults(results, Dict(:result => df), estimator, method)
 end
 
 """
@@ -594,5 +597,5 @@ end
 Returns dataframe with bioequivalence results.
 """
 function result(beres::BEResults)
-    beres.df
+    beres.df[:result]
 end
