@@ -20,19 +20,23 @@ function functional_term(f, arg_expr...)
 end
 
 """
-    bioquivalence(data;
-    vars = nothing,
-    subject = :subject,
-    period = :period,
-    formulation = :formulation,
-    sequence = :sequence,
-    stage = nothing,
-    reference = nothing,
-    design = nothing,
-    io::IO = stdout,
-    seqcheck = true,
-    dropcheck = true,
-    logt = true)
+    bioequivalence(data;
+        vars = nothing,
+        subject::Union{String, Symbol},
+        period::Union{String, Symbol, Nothing} = nothing,
+        formulation::Union{String, Symbol},
+        sequence::Union{String, Symbol, Nothing} = nothing,
+        stage::Union{String, Symbol, Nothing} = nothing,
+        reference::Union{String, Symbol, Nothing} = nothing,
+        design::Union{String, Symbol, Nothing} = nothing,
+        io::IO = stdout,
+        seqcheck::Bool = true,
+        designcheck::Bool = true,
+        dropcheck::Bool = true,
+        info::Bool = true,
+        warns::Bool = true,
+        autoseq::Bool = false,
+        logt::Bool = true)
 
 * `vars` - variabel's column(s);
 * `subject` - subject's column;
@@ -42,8 +46,12 @@ end
 * `stage` - stage's column;
 * `reference` - reference value for `formulation` column;
 * `design` - design: "parallel", "2X2", "2X2X2", "2X2X4", ets. (formulations X sequences X periods);
-* `seqcheck` - check sequencs;     
+* `seqcheck` - check sequencs; 
+* `designcheck` - check design correctness;  
 * `dropcheck` - dropuot check;
+* `info` - show information;
+* `warns` - show warnings;
+* `autoseq` - try to make sequence collumn;
 * `logt` - if `true` (default) data is already log-transformed, else `log()` will be used.
 """
 function bioequivalence(data;
@@ -57,6 +65,7 @@ function bioequivalence(data;
     design::Union{String, Symbol, Nothing} = nothing,
     io::IO = stdout,
     seqcheck::Bool = true,
+    designcheck::Bool = true,
     dropcheck::Bool = true,
     info::Bool = true,
     warns::Bool = true,
@@ -189,7 +198,7 @@ function bioequivalence(data;
         if seqcheck && !isnothing(sequence)
             for i = 1:obsnum
                 if getcol(data, sequence)[i] != subjdict[getcol(data, subject)[i]]
-                    error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]])")
+                    error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]]), use `seqcheck = false` keyword to disable sequence check.")
                 end
             end
             if length(unique(length.(sequences))) > 1
@@ -202,13 +211,13 @@ function bioequivalence(data;
             info && @info "Trying to find out the design..."
             design = "$(length(formulations))X$(length(sequences))X$(length(periods))"
             info && @info  "Seems design type is: $design"
-        else
+        elseif designcheck
             if design == "2X2" design = "2X2X2" end
             spldes = split(design, "X")
             if length(spldes) != 3 error("Unknown design type. Use fXsXp format or \"2Х2\".") end
             if length(formulations) != parse(Int, spldes[1]) error("Design error: formulations count wrong!") end
             if length(sequences) != parse(Int, spldes[2]) error("Design error: sequences count wrong!") end
-            if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong!") end
+            if length(periods) != parse(Int, spldes[3]) error("Design error: periods count wrong! length(periods) = $(length(periods)), desigh = $design , use `designcheck = false` keyword to disable design check.") end
             info && @info "Design type seems fine..."
         end
     else
@@ -366,8 +375,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
 
         end
     end
-    
+    ##############################
     # MODEL SELECTION
+    ##############################
     if design == "parallel"
 
         if estimator != "glm" && !supresswarn @warn("Design is parallel, but estimator not GLM, GLM will be used!") end 
@@ -377,7 +387,13 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         if be.logt
             models = [@eval @formula($i ~ $(be.formulation)) for i in be.vars]
         else
-            models = [@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars]
+            models = [begin
+                rfo =  @eval  @formula(0 ~ $(be.formulation))
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs) 
+            end for i in be.vars
+            #@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars
+            ]
         end
 
     elseif design in ("2X2", "2X2X2") 
@@ -457,7 +473,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
                 lhs = functional_term(log, i)
                 FormulaTerm(lhs, rfo.rhs)
-            end for i in be.vars]
+                end for i in be.vars]
             end
         elseif estimator == "met"
             if be.logt
@@ -476,7 +492,6 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 models = [begin 
                 rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
                 lhs = functional_term(log, i)
-                #lhs = term(i)
                 FormulaTerm(lhs, rfo.rhs) 
                 end for i in be.vars]
                 
@@ -486,6 +501,9 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         end
     end
     
+    ####################################
+    # ESTIMATION (fitting)
+    ####################################
     # If GLM used 
     if estimator == "glm"
 
@@ -539,7 +557,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
             lnLCI = PE - SE * quantile(dist, 1-alpha)
             lnUCI = PE + SE * quantile(dist, 1-alpha)
             push!(df, (string(coefnames(i)[2], " - ", be.reference),
-                coefnames(i.mf.f.lhs),
+                responsename(i),
                 PE,
                 SE,
                 DF,
@@ -583,9 +601,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 ))
         end
 
-
     end
-    BEResults(results, df, estimator, method)
+    BEResults(results, Dict(:result => df), estimator, method)
 end
 
 """
@@ -594,5 +611,5 @@ end
 Returns dataframe with bioequivalence results.
 """
 function result(beres::BEResults)
-    beres.df
+    beres.df[:result]
 end

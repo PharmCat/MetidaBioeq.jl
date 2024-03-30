@@ -1,16 +1,20 @@
 using Test, DataFrames, CSV, CategoricalArrays, StatsModels
+using MetidaNCA
 
 path     = dirname(@__FILE__)
 io       = IOBuffer();
 
-rds1 = bedf2x2 = CSV.File(joinpath(path, "csv", "2x2rds1.csv")) |> DataFrame
-transform!(bedf2x2, :Subject => categorical, renamecols = false)
-transform!(bedf2x2, :Period => categorical, renamecols = false)
+rdsdict    = Dict()
+rdsdict[1] = rds1 = bedf2x2 = CSV.File(joinpath(path, "csv", "2x2rds1.csv")) |> DataFrame
+transform!(bedf2x2, :Subj => categorical, renamecols = false)
+transform!(bedf2x2, :Per => categorical, renamecols = false)
 bedf2x2.logVar = log.(bedf2x2.Var)
 
 bedf2x2x4 = CSV.File(joinpath(path, "csv", "2x2x4rds1.csv")) |> DataFrame 
 transform!(bedf2x2x4, :Subject => categorical, renamecols = false)
 transform!(bedf2x2x4, :Period => categorical, renamecols = false)
+
+refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
 
 @testset "  Basic test" begin
 
@@ -30,9 +34,9 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     sequence = :Sequence, 
     autoseq = true)
     berBmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "B")
-    @test berBmet.df[1,1] == "Formulation: T - R"
-    @test berBmet.df[1,2] == "logVar"
-    @test berBmet.df[1,:level] == 90.0
+    @test MetidaBioeq.result(berBmet)[1, 1] == "Formulation: T - R"
+    @test MetidaBioeq.result(berBmet)[1, 2] == "logVar"
+    @test MetidaBioeq.result(berBmet)[1,:level] == 90.0
     berCmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "C")
     berBmm   = MetidaBioeq.estimate(be;  estimator = "mm", method = "B")
     berAglm  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
@@ -70,16 +74,16 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     #
     be2 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :logVar, 
-    subject = :Subject, 
-    formulation = :Formulation, 
-    period = :Period,
-    sequence = :Sequence, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
     autoseq = true)
     bedf2x2seq = MetidaBioeq.makeseq(bedf2x2, 
-    subject = :Subject, 
-    formulation = :Formulation, 
-    period = :Period)
-    @test bedf2x2.Sequence == bedf2x2seq
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per)
+    @test bedf2x2.Seq == bedf2x2seq
 
     beAglm  = MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
     beBmm   = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
@@ -98,7 +102,7 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     be3 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :logVar, 
     subject = :psbj, 
-    formulation = :Formulation, 
+    formulation = :Trt, 
     autoseq = true)
 
     berPglm  = MetidaBioeq.estimate(be3;  estimator = "glm")
@@ -121,10 +125,10 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     #
     be2 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :Var, 
-    subject = :Subject, 
-    formulation = :Formulation, 
-    period = :Period,
-    sequence = :Sequence, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
     design = "2x2",
     autoseq = true,
     logt = false)
@@ -132,7 +136,7 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     # 2x2
     # 
     beAglm  = MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
-    @test beAglm.df[1,2] == "log(Var)"
+    @test MetidaBioeq.result(beAglm)[1,2] == "log(Var)"
     beBmm   = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
     beBmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
     @test beAglm.method == "A"
@@ -154,194 +158,286 @@ transform!(bedf2x2x4, :Period => categorical, renamecols = false)
     # More than 1 var; reverce reference
     be2 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = [:Var, :logVar], 
-    subject = :Subject, 
-    formulation = :Formulation, 
+    subject = :Subj, 
+    formulation = :Trt, 
     reference = "T",
-    period = :Period,
-    sequence = :Sequence)
+    period = :Per,
+    sequence = :Seq)
     beres =  MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
-    @test beres.df[1,1] == "Formulation: R - T"
+    @test MetidaBioeq.result(beres)[1,1] == "Trt: R - T"
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
 
 end
 
-rds2 = CSV.File(joinpath(path, "csv", "2x2rds2.csv")) |> DataFrame
-transform!(rds2, :Subj => categorical, renamecols = false)
-transform!(rds2, :Per => categorical, renamecols = false)
-rds2.logVar = log.(rds2.Var)
-
-rds3 = CSV.File(joinpath(path, "csv", "2x2rds3.csv")) |> DataFrame
-transform!(rds3, :Subj => categorical, renamecols = false)
-transform!(rds3, :Per => categorical, renamecols = false)
-rds3.logVar = log.(rds3.Var)
-
-rds4 = CSV.File(joinpath(path, "csv", "2x2rds4.csv")) |> DataFrame
-transform!(rds4, :Subj => categorical, renamecols = false)
-transform!(rds4, :Per => categorical, renamecols = false)
-rds4.logVar = log.(rds4.Var)
-
-rds5 = CSV.File(joinpath(path, "csv", "2x2rds5.csv")) |> DataFrame
-transform!(rds5, :Subj => categorical, renamecols = false)
-transform!(rds5, :Per => categorical, renamecols = false)
-rds5.logVar = log.(rds5.Var)
-
-rds6 = CSV.File(joinpath(path, "csv", "2x2rds6.csv")) |> DataFrame
-transform!(rds6, :Subj => categorical, renamecols = false)
-transform!(rds6, :Per => categorical, renamecols = false)
-rds6.logVar = log.(rds6.Var)
-
-rds7 = CSV.File(joinpath(path, "csv", "2x2rds7.csv")) |> DataFrame
-transform!(rds7, :Subj => categorical, renamecols = false)
-transform!(rds7, :Per => categorical, renamecols = false)
-rds7.logVar = log.(rds7.Var)
-
-rds8 = CSV.File(joinpath(path, "csv", "2x2rds8.csv")) |> DataFrame
-transform!(rds8, :Subj => categorical, renamecols = false)
-transform!(rds8, :Per => categorical, renamecols = false)
-rds8.logVar = log.(rds8.Var)
-
-@testset "  Validation" begin
-    # RDS 1
-    be = MetidaBioeq.bioequivalence(rds1, 
-    vars = :Var, 
-    subject = :Subject, 
-    formulation = :Formulation, 
-    period = :Period,
-    sequence = :Sequence, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
-
-    @test isapprox(df.GMR[1], 95.09, atol = 0.01)
-    @test isapprox(df.LCI[1], 90.76, atol = 0.01) 
-    @test isapprox(df.UCI[1], 99.62, atol = 0.01)
-
-    # RDS 2
-    be = MetidaBioeq.bioequivalence(rds2, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
-
-    @test isapprox(df.GMR[1], 71.10, atol = 0.01)
-    @test isapprox(df.LCI[1], 51.45, atol = 0.01) 
-    @test isapprox(df.UCI[1], 98.26, atol = 0.01)
-
-    # RDS 3
-    be = MetidaBioeq.bioequivalence(rds3, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
-
-    @test isapprox(df.GMR[1], 58.56, atol = 0.01)
-    @test isapprox(df.LCI[1], 39.41, atol = 0.01) 
-    @test isapprox(df.UCI[1], 87.03, atol = 0.01)
-
-    # RDS 4
-    be = MetidaBioeq.bioequivalence(rds4, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
-
-    @test isapprox(df.GMR[1], 71.10, atol = 0.01)
-    @test isapprox(df.LCI[1], 51.45, atol = 0.01) 
-    @test isapprox(df.UCI[1], 98.26, atol = 0.01)
+rdsdict[2] = CSV.File(joinpath(path, "csv", "2x2rds2.csv")) |> DataFrame
+rdsdict[3] = CSV.File(joinpath(path, "csv", "2x2rds3.csv")) |> DataFrame
+rdsdict[4] = CSV.File(joinpath(path, "csv", "2x2rds4.csv")) |> DataFrame
+rdsdict[5] = CSV.File(joinpath(path, "csv", "2x2rds5.csv")) |> DataFrame
+rdsdict[6] = CSV.File(joinpath(path, "csv", "2x2rds6.csv")) |> DataFrame
+rdsdict[7] = CSV.File(joinpath(path, "csv", "2x2rds7.csv")) |> DataFrame
+rdsdict[8] = CSV.File(joinpath(path, "csv", "2x2rds8.csv")) |> DataFrame
 
 
-    # RDS 5
-    be = MetidaBioeq.bioequivalence(rds5, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
+for (k,v) in rdsdict
+    transform!(v, :Subj => categorical, renamecols = false)
+    transform!(v, :Per => categorical, renamecols = false)
+    v.logVar = log.(v.Var)
+end
 
-    @test isapprox(df.GMR[1], 91.83, atol = 0.01)
-    @test isapprox(df.LCI[1], 55.71, atol = 0.01) 
-    @test isapprox(df.UCI[1], 151.37, atol = 0.01)
+# Schütz, H., Labes, D., & Fuglsang, A. (2014). Reference datasets for 2-treatment, 2-sequence, 2-period bioequivalence studies. The AAPS journal, 16(6), 1292–1297. https://doi.org/10.1208/s12248-014-9661-0
 
-    # RDS 6
-    be = MetidaBioeq.bioequivalence(rds6, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
+@testset "  Validation 2x2" begin
+    cidf = refvals[1:8, 4:6]
 
-    @test isapprox(df.GMR[1], 99.89, atol = 0.01)
-    @test isapprox(df.LCI[1], 93.37, atol = 0.01) 
-    @test isapprox(df.UCI[1], 106.86, atol = 0.01)
+    for (k, v) in rdsdict
+        be = MetidaBioeq.bioequivalence(v, 
+        vars = :Var, 
+        subject = :Subj, 
+        formulation = :Trt, 
+        period = :Per,
+        sequence = :Seq, 
+        design = "2x2",
+        autoseq = true,
+        logt = false,
+        info = false)
+        beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+        df     = MetidaBioeq.result(beres)
 
-    # RDS 7
-    be = MetidaBioeq.bioequivalence(rds7, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
+        @test isapprox(df.GMR[1], cidf[k, "GMR"], atol = 0.01)
+        @test isapprox(df.LCI[1], cidf[k, "LCI"], atol = 0.01) 
+        @test isapprox(df.UCI[1], cidf[k, "UCI"], atol = 0.01)
+    end
+    for (k, v) in rdsdict
+        be = MetidaBioeq.bioequivalence(v, 
+        vars = :logVar, 
+        subject = :Subj, 
+        formulation = :Trt, 
+        period = :Per,
+        sequence = :Seq, 
+        design = "2x2",
+        autoseq = true,
+        logt = true,
+        info = false)
+        beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
+        df     = MetidaBioeq.result(beres)
 
-    @test isapprox(df.GMR[1], 92.15, atol = 0.01)
-    @test isapprox(df.LCI[1], 88.46, atol = 0.01) 
-    @test isapprox(df.UCI[1], 95.99, atol = 0.01)
-
-    # RDS 8
-    be = MetidaBioeq.bioequivalence(rds8, 
-    vars = :Var, 
-    subject = :Subj, 
-    formulation = :Trt, 
-    period = :Per,
-    sequence = :Seq, 
-    design = "2x2",
-    autoseq = true,
-    logt = false)
-    beres  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
-    df     = MetidaBioeq.result(beres)
-
-    @test isapprox(df.GMR[1], 93.42, atol = 0.01)
-    @test isapprox(df.LCI[1], 86.81, atol = 0.01) 
-    @test isapprox(df.UCI[1], 100.55, atol = 0.01)
-
+        @test isapprox(df.GMR[1], cidf[k, "GMR"], atol = 0.01)
+        @test isapprox(df.LCI[1], cidf[k, "LCI"], atol = 0.01) 
+        @test isapprox(df.UCI[1], cidf[k, "UCI"], atol = 0.01)
+    end
 end
 
 
+# Reference Datasets for Studies in a Replicate Design Intended for Average Bioequivalence with Expanding Limits
+
+rdsdict2 = Dict()
+for i = 1:30
+    rdsdict2[i] = CSV.File(joinpath(path, "csv", "rds$i.csv")) |> DataFrame
+    transform!(rdsdict2[i], :subject => categorical, renamecols = false)
+    transform!(rdsdict2[i], :period => categorical, renamecols = false)
+    rdsdict2[i].logVar = log.(rdsdict2[i].PK)
+end
+
+# Schütz, H., Labes, D., Tomashevskiy, M., la Parra, M. G., Shitova, A., & Fuglsang, A. (2020). Reference Datasets for Studies in a Replicate Design Intended for Average Bioequivalence with Expanding Limits. The AAPS journal, 22(2), 44. https://doi.org/10.1208/s12248-020-0427-6
+
+@testset "  Validation replicate (model B)" begin
+    cidf = refvals[61:90, :]
+
+    for i = 1:30
+        @testset "  RDS $i" begin
+            be = MetidaBioeq.bioequivalence(rdsdict2[i], 
+            vars = :PK, 
+            subject = :subject, 
+            formulation = :treatment, 
+            period = :period,
+            sequence = :sequence, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = false)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "mm", method = "B")
+            df     = MetidaBioeq.result(beres)
+
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+            @test isapprox(df.DF[1],  cidf[i, "DF"], atol = 0.1)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "met", method = "B")
+            df     = MetidaBioeq.result(beres)
+
+            @test isapprox(df.LCI[1], cidf[i, "LCISPSS"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCISPSS"], atol = 0.01)
+            if !isapprox(df.DF[1], cidf[i, "DFSPSS"], atol = 0.1)
+                @info "DF for Metida method B = $(df.DF[1]), reference value SAS = $(cidf[i, "DF"]), reference value SPSS = $(cidf[i, "DFSPSS"]). CI check passed."
+            end
+            @test isapprox(beres.models[1].result.reml, cidf[i, "REMLSPSS"], atol = 0.01)
+
+        end
+    end
+
+    @testset "  Already log-transformed" begin
+        for i = 1:30
+        
+            be = MetidaBioeq.bioequivalence(rdsdict2[i], 
+            vars = :logVar, 
+            subject = :subject, 
+            formulation = :treatment, 
+            period = :period,
+            sequence = :sequence, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = true,
+            info = false)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "mm", method = "B")
+            df     = MetidaBioeq.result(beres)
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+            beres = MetidaBioeq.estimate(be;  estimator = "met", method = "B")
+            df     = MetidaBioeq.result(beres)
+            @test isapprox(df.LCI[1], cidf[i, "LCISPSS"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCISPSS"], atol = 0.01)
+        end
+    end
+
+end
+
+spssinfmsg = Dict()
+spssinfmsg["*"] = """
+ - The final Hessian matrix is not positive definite although all convergence criteria
+are satisfied. The MIXED procedure continues despite this warning. Validity of subsequent
+results cannot be ascertained."""
+
+spssinfmsg["**"] = """
+ - Iteration was terminated but convergence has not been achieved. The MIXED procedure
+continues despite this warning. Subsequent results produced are based on the last iteration.
+Validity of the model fit is uncertain."""
+spssinfmsg[missing] = "" 
+
+
+@testset "  Validation replicate (model C)" begin
+    cidf = refvals[91:120, :]
+
+    for i = 1:29 # RDS 30 not estimable with SPSS 
+        @testset "  RDS $i" begin
+            be = MetidaBioeq.bioequivalence(rdsdict2[i], 
+            vars = :PK, 
+            subject = :subject, 
+            formulation = :treatment, 
+            period = :period,
+            sequence = :sequence, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = false)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "met", method = "C")
+            df     = MetidaBioeq.result(beres)
+
+            if !isapprox(df.LCI[1], cidf[i, "LCISPSS"], atol = 0.1)
+                @info "RDS$i LCI for Metida method C = $(df.LCI[1]), reference value SPSS = $(cidf[i, "LCISPSS"]). "
+
+            end
+            if !isapprox(df.UCI[1], cidf[i, "UCISPSS"], atol = 0.1)
+                @info "RDS$i UCI for Metida method C = $(df.UCI[1]), reference value SPSS = $(cidf[i, "UCISPSS"]). "
+
+            end
+  
+            @test isapprox(beres.models[1].result.reml, cidf[i, "REMLSPSS"], atol = 0.01)
+
+        end
+    end
+end
+
+rdsdict3 = Dict()
+for i = 1:11
+    rdsdict3[i] = CSV.File(joinpath(path, "csv", "pds$i.txt")) |> DataFrame
+    transform!(rdsdict3[i], :Subj => categorical, renamecols = false)
+    rdsdict3[i].logVar = log.(rdsdict3[i].Var)
+end
+
+# Fuglsang, A., Schütz, H., & Labes, D. (2015). Reference datasets for bioequivalence trials in a two-group parallel design. The AAPS journal, 17(2), 400–404. https://doi.org/10.1208/s12248-014-9704-6
+
+@testset "  Validation parallel, no welch correction" begin
+    cidf = refvals[20:30, :]
+
+    for i = 1:11
+        @testset "  RDS $i" begin
+            be = MetidaBioeq.bioequivalence(rdsdict3[i], 
+            vars = :Var, 
+            subject = :Subj, 
+            formulation = :Treat, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = true)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df     = MetidaBioeq.result(beres)
+            
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+        end
+    end
+
+    for i = 1:11
+        @testset "  RDS $i log-transformed" begin
+            be = MetidaBioeq.bioequivalence(rdsdict3[i], 
+            vars = :logVar, 
+            subject = :Subj, 
+            formulation = :Treat, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = true,
+            info = true)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df     = MetidaBioeq.result(beres)
+
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+        end
+    end
+end
+
+
+@testset "  NCA parallel design" begin
+    ncads  = CSV.File(joinpath(dirname(pathof(MetidaNCA)), "..", "test", "csv",  "pkdata2.csv")) |> DataFrame
+    ncares = nca(ncads, :Time, :Concentration, [:Subject, :Formulation])
+    ncadf = DataFrame(ncares)
+    transform!(ncadf, :Subject => categorical, renamecols = false)
+    be = MetidaBioeq.bioequivalence(ncadf, 
+            vars = [:Cmax, :AUClast], 
+            subject = :Subject, 
+            formulation = :Formulation, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = false)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df    = MetidaBioeq.result(beres)
+
+            @test df.Parameter[1] == "Formulation: T - R"
+            @test df.Metric[1] == "log(Cmax)"
+            @test isapprox(df.DF[1], 8.0, atol = 0.01)
+            @test isapprox(df.LCI[1], 77.98, atol = 0.01) 
+            @test isapprox(df.UCI[1], 149.52, atol = 0.01)
+
+            @test df.Parameter[2] == "Formulation: T - R"
+            @test df.Metric[2] == "log(AUClast)"
+            @test isapprox(df.DF[2], 8.0, atol = 0.01)
+            @test isapprox(df.LCI[2], 90.41, atol = 0.01) 
+            @test isapprox(df.UCI[2], 154.16, atol = 0.01)
+end
 # Examples
 #=
 using MixedModels

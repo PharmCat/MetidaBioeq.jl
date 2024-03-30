@@ -3,7 +3,7 @@ uuid = "00e1d80e-504f-4d7b-946f-0aea2e7abfe3"
 keywords = ["bioequivalence"]
 desc = "Bioequivalence"
 authors = ["Vladimir Arnautov <mail@pharmcat.net>"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
@@ -19,10 +19,10 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 CategoricalArrays = "0.10"
 DataFrames = "1"
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
-GLM = "1.8.2"
-Metida = "0.14.6, 0.14.7"
-MetidaNCA = "0.5.7"
-MixedModels = "4.11, 4.12, 4.13, 4.14"
+GLM = "1.8"
+Metida = "0.15"
+MetidaNCA = "0.5"
+MixedModels = "4"
 StatsBase = "0.30, 0.31, 0.32, 0.33, 0.34"
 julia = "1"
 
