@@ -6,12 +6,17 @@
 MetidaBioeq.bioequivalence
 ```
 
-### MetidaBioeq.makeseq
+### MetidaBioeq.estimate
 ```@docs
-MetidaBioeq.makeseq
+MetidaBioeq.estimate
 ```
 
 ### MetidaBioeq.result
 ```@docs
 MetidaBioeq.result
+```
+
+### MetidaBioeq.makeseq
+```@docs
+MetidaBioeq.makeseq
 ```

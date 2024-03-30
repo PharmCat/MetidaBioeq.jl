@@ -108,6 +108,8 @@ ESTIMATE 'T vs. R' TRT 1 -1/CL ALPHA=0.1;
 guidance recommends that TYPE=UN not be used, as it could result in an invalid (i.e., not non-
 negative definite) estimated covariance matrix**
 
+[Exported SPSS results](https://github.com/PharmCat/Metida.jl/blob/f76cd21fe7aceb01e5d0fcf75137c9ff6f3a8377/validation/RDS-OUTPUT.docx).
+
 
 ### Reference:
 
