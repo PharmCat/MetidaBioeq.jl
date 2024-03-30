@@ -185,6 +185,7 @@ for (k,v) in rdsdict
     v.logVar = log.(v.Var)
 end
 
+# Schütz, H., Labes, D., & Fuglsang, A. (2014). Reference datasets for 2-treatment, 2-sequence, 2-period bioequivalence studies. The AAPS journal, 16(6), 1292–1297. https://doi.org/10.1208/s12248-014-9661-0
 
 @testset "  Validation 2x2" begin
     cidf = refvals[1:8, 4:6]
@@ -238,6 +239,7 @@ for i = 1:30
     rdsdict2[i].logVar = log.(rdsdict2[i].PK)
 end
 
+# Schütz, H., Labes, D., Tomashevskiy, M., la Parra, M. G., Shitova, A., & Fuglsang, A. (2020). Reference Datasets for Studies in a Replicate Design Intended for Average Bioequivalence with Expanding Limits. The AAPS journal, 22(2), 44. https://doi.org/10.1208/s12248-020-0427-6
 
 @testset "  Validation replicate (model B)" begin
     cidf = refvals[61:90, :]
@@ -358,6 +360,8 @@ for i = 1:11
     transform!(rdsdict3[i], :Subj => categorical, renamecols = false)
     rdsdict3[i].logVar = log.(rdsdict3[i].Var)
 end
+
+# Fuglsang, A., Schütz, H., & Labes, D. (2015). Reference datasets for bioequivalence trials in a two-group parallel design. The AAPS journal, 17(2), 400–404. https://doi.org/10.1208/s12248-014-9704-6
 
 @testset "  Validation parallel, no welch correction" begin
     cidf = refvals[20:30, :]

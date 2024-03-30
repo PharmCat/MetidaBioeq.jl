@@ -13,7 +13,7 @@ The United States Food and Drug Administration (FDA) has defined bioequivalence 
 * Julia ≥1.8+
 * MixedModels ≥4.11
 * GLM ≥1.8.2
-* Metida ≥0.14.6
+* Metida ≥0.15
 
 ### Models 
 
@@ -21,7 +21,7 @@ Basic models for bioequivalence.
 
 #### A
 
-Standard fixed-effect model.
+Standard fixed-effect model. For parallel design Welch's correction not used.
 
 ```julia
 # Parallel design GLM
@@ -35,6 +35,12 @@ fit(LinearModel, @formula(var ~ formulation + period + sequence + subject), data
 contrasts = Dict(formulation => DummyCoding(base = reference)),
 )
 ```
+
+Validated with:
+
+* Schütz, H., Labes, D., & Fuglsang, A. (2014). Reference datasets for 2-treatment, 2-sequence, 2-period bioequivalence studies. The AAPS journal, 16(6), 1292–1297. https://doi.org/10.1208/s12248-014-9661-0
+* Fuglsang, A., Schütz, H., & Labes, D. (2015). Reference datasets for bioequivalence trials in a two-group parallel design. The AAPS journal, 17(2), 400–404. https://doi.org/10.1208/s12248-014-9704-6
+
 
 #### Type B
 
@@ -56,6 +62,11 @@ contrasts = Dict(formulation => DummyCoding(base = reference)),
 
 ```
 
+Validated with: 
+
+* Schütz, H., Labes, D., Tomashevskiy, M., la Parra, M. G., Shitova, A., & Fuglsang, A. (2020). Reference Datasets for Studies in a Replicate Design Intended for Average Bioequivalence with Expanding Limits. The AAPS journal, 22(2), 44. https://doi.org/10.1208/s12248-020-0427-6
+
+
 #### Type C
 
 Random-effect model, with covariance (FDA reference code).
@@ -68,6 +79,35 @@ repeated = VarEffect(@covstr(formulation|subject), DIAG),
 contrasts = Dict(formulation => DummyCoding(base = reference)),
 )
 ```
+
+Validated against SPSS model:
+
+```
+MIXED var BY period formulation sequence subject
+  /CRITERIA=CIN(90) MXITER(200) MXSTEP(20) SCORING(2) SINGULAR(0.000000000001) HCONVERGE(0,
+    RELATIVE) LCONVERGE(0.0000000000001, RELATIVE) PCONVERGE(0, RELATIVE)
+  /FIXED=period formulation sequence | SSTYPE(3)
+  /METHOD=REML
+  /RANDOM=formulation | SUBJECT(subject) COVTYPE(CSH)
+  /REPEATED=formulation | SUBJECT(subject*period) COVTYPE(DIAG)
+  /EMMEANS=TABLES(formulation) COMPARE REFCAT(FIRST) ADJ(LSD).
+```
+
+What complies with the FDA code ([FDA Guidance for Industry: Statistical Approaches to Establishing Bioequivalence](https://www.fda.gov/media/70958/download), APPENDIX F):
+
+```
+PROC MIXED;
+CLASSES SEQ SUBJ PER TRT;
+MODEL Y = SEQ PER TRT/ DDFM=SATTERTH;
+RANDOM TRT/TYPE=FA0(2) SUB=SUBJ G;
+REPEATED/GRP=TRT SUB=SUBJ;
+ESTIMATE 'T vs. R' TRT 1 -1/CL ALPHA=0.1;
+```
+
+**In the Random statement, TYPE=FA0(2) could possibly be replaced by TYPE=CSH. This
+guidance recommends that TYPE=UN not be used, as it could result in an invalid (i.e., not non-
+negative definite) estimated covariance matrix**
+
 
 ### Reference:
 
