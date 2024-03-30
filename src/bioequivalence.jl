@@ -379,7 +379,13 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         if be.logt
             models = [@eval @formula($i ~ $(be.formulation)) for i in be.vars]
         else
-            models = [@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars]
+            models = [begin
+                rfo =  @eval  @formula(0 ~ $(be.formulation))
+                lhs = functional_term(log, i)
+                FormulaTerm(lhs, rfo.rhs) 
+            end for i in be.vars
+            #@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars
+            ]
         end
 
     elseif design in ("2X2", "2X2X2") 
@@ -543,7 +549,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
             lnLCI = PE - SE * quantile(dist, 1-alpha)
             lnUCI = PE + SE * quantile(dist, 1-alpha)
             push!(df, (string(coefnames(i)[2], " - ", be.reference),
-                coefnames(i.mf.f.lhs),
+                responsename(i),
                 PE,
                 SE,
                 DF,

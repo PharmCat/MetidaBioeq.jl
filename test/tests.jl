@@ -1,4 +1,5 @@
 using Test, DataFrames, CSV, CategoricalArrays, StatsModels
+using MetidaNCA
 
 path     = dirname(@__FILE__)
 io       = IOBuffer();
@@ -33,9 +34,9 @@ refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
     sequence = :Sequence, 
     autoseq = true)
     berBmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "B")
-    @test berBmet.df[1,1] == "Formulation: T - R"
-    @test berBmet.df[1,2] == "logVar"
-    @test berBmet.df[1,:level] == 90.0
+    @test MetidaBioeq.result(berBmet)[1, 1] == "Formulation: T - R"
+    @test MetidaBioeq.result(berBmet)[1, 2] == "logVar"
+    @test MetidaBioeq.result(berBmet)[1,:level] == 90.0
     berCmet  = MetidaBioeq.estimate(be;  estimator = "met", method = "C")
     berBmm   = MetidaBioeq.estimate(be;  estimator = "mm", method = "B")
     berAglm  = MetidaBioeq.estimate(be;  estimator = "glm", method = "A")
@@ -135,7 +136,7 @@ refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
     # 2x2
     # 
     beAglm  = MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
-    @test beAglm.df[1,2] == "log(Var)"
+    @test MetidaBioeq.result(beAglm)[1,2] == "log(Var)"
     beBmm   = MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
     beBmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
     @test beAglm.method == "A"
@@ -163,7 +164,7 @@ refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
     period = :Per,
     sequence = :Seq)
     beres =  MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
-    @test beres.df[1,1] == "Trt: R - T"
+    @test MetidaBioeq.result(beres)[1,1] == "Trt: R - T"
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
 
@@ -351,6 +352,88 @@ spssinfmsg[missing] = ""
     end
 end
 
+rdsdict3 = Dict()
+for i = 1:11
+    rdsdict3[i] = CSV.File(joinpath(path, "csv", "pds$i.txt")) |> DataFrame
+    transform!(rdsdict3[i], :Subj => categorical, renamecols = false)
+    rdsdict3[i].logVar = log.(rdsdict3[i].Var)
+end
+
+@testset "  Validation parallel, no welch correction" begin
+    cidf = refvals[20:30, :]
+
+    for i = 1:11
+        @testset "  RDS $i" begin
+            be = MetidaBioeq.bioequivalence(rdsdict3[i], 
+            vars = :Var, 
+            subject = :Subj, 
+            formulation = :Treat, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = true)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df     = MetidaBioeq.result(beres)
+            
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+        end
+    end
+
+    for i = 1:11
+        @testset "  RDS $i log-transformed" begin
+            be = MetidaBioeq.bioequivalence(rdsdict3[i], 
+            vars = :logVar, 
+            subject = :Subj, 
+            formulation = :Treat, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = true,
+            info = true)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df     = MetidaBioeq.result(beres)
+
+            @test isapprox(df.LCI[1], cidf[i, "LCI"], atol = 0.01) 
+            @test isapprox(df.UCI[1], cidf[i, "UCI"], atol = 0.01)
+        end
+    end
+end
+
+
+@testset "  NCA parallel design" begin
+    ncads  = CSV.File(joinpath(dirname(pathof(MetidaNCA)), "..", "test", "csv",  "pkdata2.csv")) |> DataFrame
+    ncares = nca(ncads, :Time, :Concentration, [:Subject, :Formulation])
+    ncadf = DataFrame(ncares)
+    transform!(ncadf, :Subject => categorical, renamecols = false)
+    be = MetidaBioeq.bioequivalence(ncadf, 
+            vars = [:Cmax, :AUClast], 
+            subject = :Subject, 
+            formulation = :Formulation, 
+            autoseq = false,
+            seqcheck = false,
+            dropcheck = false,
+            logt = false,
+            info = false)
+
+            beres = MetidaBioeq.estimate(be;  estimator = "glm")
+            df    = MetidaBioeq.result(beres)
+
+            @test df.Parameter[1] == "Formulation: T - R"
+            @test df.Metric[1] == "log(Cmax)"
+            @test isapprox(df.DF[1], 8.0, atol = 0.01)
+            @test isapprox(df.LCI[1], 77.98, atol = 0.01) 
+            @test isapprox(df.UCI[1], 149.52, atol = 0.01)
+
+            @test df.Parameter[2] == "Formulation: T - R"
+            @test df.Metric[2] == "log(AUClast)"
+            @test isapprox(df.DF[2], 8.0, atol = 0.01)
+            @test isapprox(df.LCI[2], 90.41, atol = 0.01) 
+            @test isapprox(df.UCI[2], 154.16, atol = 0.01)
+end
 # Examples
 #=
 using MixedModels
