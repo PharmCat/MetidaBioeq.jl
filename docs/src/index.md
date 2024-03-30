@@ -15,6 +15,60 @@ The United States Food and Drug Administration (FDA) has defined bioequivalence 
 * GLM ≥1.8.2
 * Metida ≥0.14.6
 
+### Models 
+
+Basic models for bioequivalence.
+
+#### A
+
+Standard fixed-effect model.
+
+```julia
+# Parallel design GLM
+fit(LinearModel, @formula(var ~ formulation), data; 
+contrasts = Dict(formulation => DummyCoding(base = reference)),
+)
+
+
+# Cross-over designs GLM
+fit(LinearModel, @formula(var ~ formulation + period + sequence + subject), data; 
+contrasts = Dict(formulation => DummyCoding(base = reference)),
+)
+```
+
+#### Type B
+
+Random-effect model, no covariance.
+
+```julia
+# MixedModels
+
+fit(MixedModel, @formula(var ~ formulation + period + sequence + (1|subject)), data; 
+    contrasts = Dict(formulation => DummyCoding(base = reference)),
+    REML=true
+)
+
+# Metida
+lmm = LMM(@formula(var~sequence+period+formulation), data;
+random = VarEffect(@covstr(1|subject), SI),
+contrasts = Dict(formulation => DummyCoding(base = reference)),
+)
+
+```
+
+#### Type C
+
+Random-effect model, with covariance (FDA reference code).
+
+```julia
+# Metida
+lmm =LMM(@formula(var~sequence+period+formulation), data;
+random = VarEffect(@covstr(formulation|subject), CSH),
+repeated = VarEffect(@covstr(formulation|subject), DIAG),
+contrasts = Dict(formulation => DummyCoding(base = reference)),
+)
+```
+
 ### Reference:
 
 

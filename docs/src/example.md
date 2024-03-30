@@ -4,8 +4,8 @@
 using MetidaBioeq, CSV, DataFrames, CategoricalArrays;
 
 bedf2x2 = CSV.File(joinpath(dirname(pathof(MetidaBioeq)), "..", "test", "csv",  "2x2rds1.csv")) |> DataFrame
-transform!(bedf2x2, :Subject => categorical, renamecols = false)
-transform!(bedf2x2, :Period => categorical, renamecols = false)
+transform!(bedf2x2, :Subj => categorical, renamecols = false)
+transform!(bedf2x2, :Per => categorical, renamecols = false)
 bedf2x2.logVar = log.(bedf2x2.Var)
 
 bedf2x2x4 = CSV.File(joinpath(dirname(pathof(MetidaBioeq)), "..", "test", "csv",  "2x2x4rds1.csv")) |> DataFrame
@@ -28,10 +28,10 @@ Simple 2x2 study. Data (`var`) not log-transgormed.
 ```@example beexample
     be1 = MetidaBioeq.bioequivalence(bedf2x2, 
     vars = :Var, 
-    subject = :Subject, 
-    formulation = :Formulation, 
-    period = :Period,
-    sequence = :Sequence, 
+    subject = :Subj, 
+    formulation = :Trt, 
+    period = :Per,
+    sequence = :Seq, 
     reference = "R",
     design = "2x2",
     autoseq = true,

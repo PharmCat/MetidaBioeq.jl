@@ -20,19 +20,23 @@ function functional_term(f, arg_expr...)
 end
 
 """
-    bioquivalence(data;
-    vars = nothing,
-    subject = :subject,
-    period = :period,
-    formulation = :formulation,
-    sequence = :sequence,
-    stage = nothing,
-    reference = nothing,
-    design = nothing,
-    io::IO = stdout,
-    seqcheck = true,
-    dropcheck = true,
-    logt = true)
+    bioequivalence(data;
+        vars = nothing,
+        subject::Union{String, Symbol},
+        period::Union{String, Symbol, Nothing} = nothing,
+        formulation::Union{String, Symbol},
+        sequence::Union{String, Symbol, Nothing} = nothing,
+        stage::Union{String, Symbol, Nothing} = nothing,
+        reference::Union{String, Symbol, Nothing} = nothing,
+        design::Union{String, Symbol, Nothing} = nothing,
+        io::IO = stdout,
+        seqcheck::Bool = true,
+        designcheck::Bool = true,
+        dropcheck::Bool = true,
+        info::Bool = true,
+        warns::Bool = true,
+        autoseq::Bool = false,
+        logt::Bool = true)
 
 * `vars` - variabel's column(s);
 * `subject` - subject's column;
@@ -42,8 +46,12 @@ end
 * `stage` - stage's column;
 * `reference` - reference value for `formulation` column;
 * `design` - design: "parallel", "2X2", "2X2X2", "2X2X4", ets. (formulations X sequences X periods);
-* `seqcheck` - check sequencs;     
+* `seqcheck` - check sequencs; 
+* `designcheck` - check design correctness;  
 * `dropcheck` - dropuot check;
+* `info` - show information;
+* `warns` - show warnings;
+* `autoseq` - try to make sequence collumn;
 * `logt` - if `true` (default) data is already log-transformed, else `log()` will be used.
 """
 function bioequivalence(data;
