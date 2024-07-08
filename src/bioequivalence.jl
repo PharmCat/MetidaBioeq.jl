@@ -33,6 +33,7 @@ end
         seqcheck::Bool = true,
         designcheck::Bool = true,
         dropcheck::Bool = true,
+        dropmissingsubj = false,
         info::Bool = true,
         warns::Bool = true,
         autoseq::Bool = false,
@@ -49,6 +50,7 @@ end
 * `seqcheck` - check sequencs; 
 * `designcheck` - check design correctness;  
 * `dropcheck` - dropuot check;
+* `dropmissingsubj` - drop subjects with missing data;
 * `info` - show information;
 * `warns` - show warnings;
 * `autoseq` - try to make sequence collumn;
@@ -67,6 +69,7 @@ function bioequivalence(data;
     seqcheck::Bool = true,
     designcheck::Bool = true,
     dropcheck::Bool = true,
+    dropmissingsubj::Bool = false,
     info::Bool = true,
     warns::Bool = true,
     autoseq::Bool = false,
@@ -188,7 +191,25 @@ function bioequivalence(data;
         if dropcheck
             if !isnothing(vars) && !nomissing(data, vars)
                 info && @info "Dropuot(s) found in dataframe!"
-                dropout = true
+                if dropmissingsubj
+                    droplists = map(x-> Set(data[findall(ismissing, data[!, x]), subject]), vars)
+                    if all(x-> isequal(x, first(droplists)), droplists)
+                        sbjdel   = x -> x ∉ first(droplists)
+                        data     = filter(subject => sbjdel, data)
+                        subjects = filter(sbjdel, subjects)
+
+                        subjnum  = length(subjects)
+                        obsnum   = size(data, 1)
+                        info && @info "Dropuot(s) removed!"
+                        dropout = false
+                    else
+                        warns && @warn "Different subjects have missing values for different variables. Dropuot(s) NOT removed!"
+                        dropout = true
+                    end
+                    
+                else
+                    dropout = true
+                end
             elseif !isnothing(vars)
                 info && @info "No dropuot(s) found in dataframe!"
                 dropout = false

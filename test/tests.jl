@@ -6,6 +6,8 @@ io       = IOBuffer();
 
 rdsdict    = Dict()
 rdsdict[1] = rds1 = bedf2x2 = CSV.File(joinpath(path, "csv", "2x2rds1.csv")) |> DataFrame
+
+
 transform!(bedf2x2, :Subj => categorical, renamecols = false)
 transform!(bedf2x2, :Per => categorical, renamecols = false)
 bedf2x2.logVar = log.(bedf2x2.Var)
@@ -15,6 +17,13 @@ transform!(bedf2x2x4, :Subject => categorical, renamecols = false)
 transform!(bedf2x2x4, :Period => categorical, renamecols = false)
 
 refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
+
+
+rds1missing = allowmissing!(deepcopy(rds1), [:Var, :logVar])
+rds1missing[1, :Var] = missing
+rds1missing[36, :Var] = missing
+rds1missing[1, :logVar] = missing
+rds1missing[36, :logVar] = missing
 
 @testset "  Basic test" begin
 
@@ -67,8 +76,6 @@ refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
     beres = MetidaBioeq.estimate(be;  estimator = "mm", method = "P")
     @test beres.method  == "B"
     @test beres.estimator== "mm"
-
-
 
     # Crossover design 2X2
     #
@@ -168,7 +175,48 @@ refvals = CSV.File(joinpath(path, "csv", "ciref.csv")) |> DataFrame
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
 
-end
+    # Drop missing
+    # no drop
+    bedm = MetidaBioeq.bioequivalence(rds1missing, 
+    vars = [:Var, :logVar], 
+    subject = :Subj, 
+    formulation = :Trt, 
+    reference = "R",
+    period = :Per,
+    sequence = :Seq, 
+    autoseq = true)
+
+    @test bedm.dropout
+    @test length(bedm.subjects) == 18
+
+    bedm = MetidaBioeq.bioequivalence(rds1missing, 
+    vars = [:Var, :logVar], 
+    subject = :Subj, 
+    formulation = :Trt, 
+    reference = "R",
+    period = :Per,
+    sequence = :Seq, 
+    autoseq = true,
+    dropmissingsubj = true)
+
+    @test bedm.dropout == false
+    @test length(bedm.subjects) == 16
+
+    rds1missing[2, :Var] = missing
+    @test_warn "Different subjects have missing values for different variables. Dropuot(s) NOT removed!" bedm = MetidaBioeq.bioequivalence(rds1missing, 
+    vars = [:Var, :logVar], 
+    subject = :Subj, 
+    formulation = :Trt, 
+    reference = "R",
+    period = :Per,
+    sequence = :Seq, 
+    autoseq = true,
+    dropmissingsubj = true)
+
+    @test bedm.dropout
+    @test length(bedm.subjects) == 18
+
+end # end Basic tests
 
 rdsdict[2] = CSV.File(joinpath(path, "csv", "2x2rds2.csv")) |> DataFrame
 rdsdict[3] = CSV.File(joinpath(path, "csv", "2x2rds3.csv")) |> DataFrame
