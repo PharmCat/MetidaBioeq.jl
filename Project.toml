@@ -3,7 +3,7 @@ uuid = "00e1d80e-504f-4d7b-946f-0aea2e7abfe3"
 keywords = ["bioequivalence"]
 desc = "Bioequivalence"
 authors = ["Vladimir Arnautov <mail@pharmcat.net>"]
-version = "0.2.4"
+version = "0.2.5"
 
 [deps]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
