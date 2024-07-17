@@ -34,6 +34,7 @@ end
         designcheck::Bool = true,
         dropcheck::Bool = true,
         dropmissingsubj = false,
+        dropincompletesubj = false,
         info::Bool = true,
         warns::Bool = true,
         autoseq::Bool = false,
@@ -51,6 +52,7 @@ end
 * `designcheck` - check design correctness;  
 * `dropcheck` - dropuot check;
 * `dropmissingsubj` - drop subjects with missing data;
+* `dropincompletesubj` - drop subjects with no full sequence data (work only if `seqcheck` = true);
 * `info` - show information;
 * `warns` - show warnings;
 * `autoseq` - try to make sequence collumn;
@@ -70,6 +72,7 @@ function bioequivalence(data;
     designcheck::Bool = true,
     dropcheck::Bool = true,
     dropmissingsubj::Bool = false,
+    dropincompletesubj::Bool = false,
     info::Bool = true,
     warns::Bool = true,
     autoseq::Bool = false,
@@ -217,10 +220,22 @@ function bioequivalence(data;
         end
 
         if seqcheck && !isnothing(sequence)
+            delinds = Int[]
             for i = 1:obsnum
                 if getcol(data, sequence)[i] != subjdict[getcol(data, subject)[i]]
-                    error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]]), use `seqcheck = false` keyword to disable sequence check.")
+                    if dropincompletesubj
+                        push!(delinds, i)
+                        warns && @warn "Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]])."
+                    else
+                        error("Sequence error or data is incomplete! \n Subject: $(getcol(data, subject)[i]), Sequence: $(getcol(data, sequence)[i]), auto: $(subjdict[getcol(data, subject)[i]]), use `seqcheck = false` keyword to disable sequence check.")
+                    end
                 end
+            end
+            if dropincompletesubj 
+                deleteat!(data, delinds)
+                subjects     = unique(getcol(data, subject))
+                subjnum = length(subjects)
+                obsnum  = size(data, 1)
             end
             if length(unique(length.(sequences))) > 1
                 error("Some sequence have different length!")
