@@ -638,7 +638,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         end
 
     end
-    BEResults(results, Dict(:result => df), estimator, method)
+    BEResults(be, results, Dict(:result => df), estimator, method)
 end
 
 """

@@ -16,7 +16,8 @@ struct Bioequivalence{D}
     logt::Bool
 end
 
-struct BEResults
+struct BEResults{D} 
+    be::Bioequivalence{D}
     models::Vector
     df::Dict
     estimator::String
