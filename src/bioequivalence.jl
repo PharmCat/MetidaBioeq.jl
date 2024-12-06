@@ -57,6 +57,8 @@ end
 * `warns` - show warnings;
 * `autoseq` - try to make sequence collumn;
 * `logt` - if `true` (default) data is already log-transformed, else `log()` will be used.
+
+If `dropmissingsubj` or `dropincompletesubj` used - copy of the data will be filtered.
 """
 function bioequivalence(data;
     vars = nothing,
@@ -198,7 +200,7 @@ function bioequivalence(data;
                     droplists = map(x-> Set(data[findall(ismissing, data[!, x]), subject]), vars)
                     if all(x-> isequal(x, first(droplists)), droplists)
                         sbjdel   = x -> x ∉ first(droplists)
-                        data     = filter(subject => sbjdel, data)
+                        data     = filter(subject => sbjdel, data[!, vcat(fac,vars)])
                         subjects = filter(sbjdel, subjects)
 
                         subjnum  = length(subjects)
@@ -232,10 +234,14 @@ function bioequivalence(data;
                 end
             end
             if dropincompletesubj 
-                deleteat!(data, delinds)
-                subjects     = unique(getcol(data, subject))
-                subjnum = length(subjects)
-                obsnum  = size(data, 1)
+                if length(delinds) > 0
+                    data = deepcopy(data[!, vcat(fac,vars)])
+                    deleteat!(data, delinds)
+                    subjects     = unique(getcol(data, subject))
+                    subjnum = length(subjects)
+                    obsnum  = size(data, 1)
+                    warns && @warn "Removed $(length(delinds)) observaton(s)!"
+                end
             end
             if length(unique(length.(sequences))) > 1
                 error("Some sequence have different length!")
@@ -540,20 +546,24 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     ####################################
     # ESTIMATION (fitting)
     ####################################
+    df     = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
+    dfdict = Dict(:result => df)
     # If GLM used 
     if estimator == "glm"
 
         results = [fit(LinearModel, m, be.data; contrasts = Dict(be.formulation => DummyCoding(base = be.reference)), dropcollinear = true) for m in models]
+        dfvar = dfdict[:var] = DataFrame(Parameter = String[], Metric = String[], SE = Float64[], CV = Float64[])
 
-        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
             for i in results
                 DF = dof_residual(i)
                 CI = confint(i, 1-2alpha)[2,:]
                 PE = coef(i)[2]
+                #std errors
+                sevec = stderror(i)   
                 push!(df, (string(coefnames(i)[2], " - ", be.reference),
                     coefnames(i.mf.f.lhs),
                     PE,
-                    stderror(i)[2],
+                    sevec[2],
                     DF,
                     CI[1],
                     CI[2],
@@ -562,6 +572,11 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                     exp(CI[2])*100,
                     (1-2alpha)*100
                     ))
+                push!(dfvar, (string(coefnames(i)[2], " - ", be.reference),
+                coefnames(i.mf.f.lhs),
+                sevec[2],
+                cvfromsd(sevec[2]) * 100
+                ))
             end
 
     # If Metida Used
@@ -584,7 +599,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
             error("Method A used or unknown method!")
         end
         # Take resulst from models
-        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
+        
         for i in results
             DF = dof_satter(i, 2)
             dist = TDist(DF)
@@ -614,7 +629,6 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         REML=true
         ) for m in models]
 
-        df = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
         for i in results
             DF = nobs(i) - rank(hcat(i.X, i.reterms[1]))
             dist = TDist(DF)

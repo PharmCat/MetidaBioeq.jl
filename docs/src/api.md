@@ -20,3 +20,16 @@ MetidaBioeq.result
 ```@docs
 MetidaBioeq.makeseq
 ```
+
+### MetidaBase
+
+### MetidaBase.sdfromcv
+```@docs
+MetidaBase.sdfromcv
+```
+
+### MetidaBase.cvfromsd
+```@docs
+MetidaBase.cvfromsd
+```
+
