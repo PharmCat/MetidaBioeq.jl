@@ -20,3 +20,8 @@ MetidaBioeq.result
 ```@docs
 MetidaBioeq.makeseq
 ```
+
+### MetidaBase
+
+See https://github.com/PharmCat/MetidaBase.jl
+
