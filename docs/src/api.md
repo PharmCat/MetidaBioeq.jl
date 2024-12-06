@@ -23,13 +23,5 @@ MetidaBioeq.makeseq
 
 ### MetidaBase
 
-### MetidaBase.sdfromcv
-```@docs
-MetidaBase.sdfromcv
-```
-
-### MetidaBase.cvfromsd
-```@docs
-MetidaBase.cvfromsd
-```
+See https://github.com/PharmCat/MetidaBase.jl
 
