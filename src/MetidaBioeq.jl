@@ -4,7 +4,7 @@ module MetidaBioeq
 
     import Base: show
 
-    import MetidaBase: cvfromsd, sdfromcv
+    import MetidaBase: cvfromsd, cvfromvar, sdfromcv
 
     export result, bioquivalence, estimate, makeseq, cvfromsd, sdfromcv
 

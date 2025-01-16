@@ -552,7 +552,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     if estimator == "glm"
 
         results = [fit(LinearModel, m, be.data; contrasts = Dict(be.formulation => DummyCoding(base = be.reference)), dropcollinear = true) for m in models]
-        dfvar = dfdict[:var] = DataFrame(Parameter = String[], Metric = String[], SE = Float64[], CV = Float64[])
+        dfvar = dfdict[:var] = DataFrame(Parameter = String[], Metric = String[],  σ²= Float64[], CV = Float64[])
 
             for i in results
                 DF = dof_residual(i)
@@ -572,11 +572,16 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                     exp(CI[2])*100,
                     (1-2alpha)*100
                     ))
+
+                σ²  = GLM.dispersion(i.model, true)
                 push!(dfvar, (string(coefnames(i)[2], " - ", be.reference),
                 coefnames(i.mf.f.lhs),
-                sevec[2],
-                cvfromsd(sevec[2]) * 100
+                σ²,
+                cvfromvar(σ²) * 100
                 ))
+
+
+
             end
 
     # If Metida Used
@@ -652,7 +657,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         end
 
     end
-    BEResults(be, results, Dict(:result => df), estimator, method)
+
+    BEResults(be, results, dfdict, estimator, method)
 end
 
 """
