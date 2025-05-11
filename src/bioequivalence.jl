@@ -337,7 +337,7 @@ function makeseq(data;
 end
 
 """
-    estimate(be; estimator = "auto", method = "auto", supresswarn = false)
+    estimate(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
 
 `method` - Model settings.
 
@@ -374,6 +374,12 @@ if method not "A", "B" or "C" than set as "A" for "glm" ann as B for other estim
 
 if `estimator` == "glm" and `method` == "B" than `estimator` set as "mm", if `estimator` == "glm" or "mm" and `method` == "C" than `estimator` set as "met".
 
+* supresswarn - supress all warnings;
+
+* alpha - alpha level for TOST CI estimation  (alpha = 0.05 means that a 90% confidence interval will be calculated). 
+
+!!! danger
+    CI level = 1 - 2alpha
 
 Reference:
 

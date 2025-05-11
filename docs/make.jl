@@ -9,6 +9,7 @@ makedocs(
         "Home" => "index.md",
         "Example" => "example.md",
         "API" => "api.md",
+        "Reference" => "ref.md",
     ],
 )
 
