@@ -1,5 +1,5 @@
 using Test, DataFrames, CSV, CategoricalArrays, StatsModels
-
+using MetidaNCA
 path     = dirname(@__FILE__)
 io       = IOBuffer();
 
