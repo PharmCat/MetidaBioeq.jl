@@ -593,6 +593,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
     # If Metida Used
     elseif estimator == "met"
 
+        dfvar = dfdict[:var] = DataFrame(Parameter = String[], Metric = String[], Source = String[], σ²= Float64[], CV = Float64[])
+
         if method == "B"
            
             results = [fit!(LMM(m, be.data;
@@ -630,11 +632,22 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 exp(lnUCI)*100,
                 (1-2alpha)*100
                 ))
+            for t = length(i.covstr.rcnames)-length(be.formulations)+1:length(i.covstr.rcnames)
+                σ² = i.result.theta[t]^2
+                push!(dfvar, (string(coefnames(i)[2], " - ", be.reference),
+                    responsename(i),
+                    i.covstr.rcnames[t],
+                    σ²,
+                    cvfromvar(σ²) * 100
+                    ))
+
+            end
         end
 
     # If MixedModels Used
     elseif estimator == "mm"
-
+        dfvar = dfdict[:var] = DataFrame(Parameter = String[], Metric = String[], Source = String[], σ²= Float64[], CV = Float64[])
+        
         results = [fit(MixedModel, m, be.data; 
         contrasts = Dict(be.formulation => DummyCoding(base = be.reference)),
         REML=true
@@ -660,6 +673,15 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 exp(lnUCI)*100,
                 (1-2alpha)*100
                 ))
+            
+            σ² = dispersion(i, true)
+            push!(dfvar, (string(coefnames(i)[2], " - ", be.reference),
+                responsename(i),
+                "CVw",
+                σ²,
+                cvfromvar(σ²) * 100
+                ))
+
         end
 
     end
