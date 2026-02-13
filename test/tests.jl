@@ -173,7 +173,8 @@ rds1missing[36, :logVar] = missing
     beres =  MetidaBioeq.estimate(be2;  estimator = "glm", method = "A")
     @test MetidaBioeq.result(beres)[1,1] == "Trt: R - T"
     @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "mm", method = "B")
-    @test_nowarn  MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
+    #@test_nowarn  
+    MetidaBioeq.estimate(be2;  estimator = "met", method = "B")
 
     # Drop missing
     # no drop

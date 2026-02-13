@@ -84,9 +84,29 @@ Estimation witn MixedModels.jl (method B).
 Estimation witn Metida.jl (method C).
 
 ```@example beexample
-    beBmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "C")
+    beCmet  = MetidaBioeq.estimate(be2;  estimator = "met", method = "C")
 ```
 
 ```@example beexample
-    beBmet.models[1]
+    beCmet.models[1]
+```
+
+### Results
+
+#### A
+
+```@example beexample
+    result(beAglm)
+```
+
+#### B
+
+```@example beexample
+    result(beBmm)
+```
+
+#### C
+
+```@example beexample
+    result(beCmet)
 ```
