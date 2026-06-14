@@ -512,6 +512,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         models = models_create(be, estimator) 
     end
     
+    if rsabe != :none && design in ("parallel", "2X2", "2X2X2") && !supresswarn @warn("rsabe option used with unsupported design, nothing will be done!") end
+
     ####################################
     # ESTIMATION (fitting)
     ####################################
