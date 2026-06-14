@@ -57,6 +57,8 @@ rds1missing[36, :logVar] = missing
     @test berAglm.method == "A"
     @test berAglm.estimator== "glm"
 
+    berAglmrsabe  = MetidaBioeq.estimate(be;  estimator = "met", method = "C", rsabe = :ema)
+
     @test_nowarn MetidaBioeq.result(berCmet)
     # Inappropriate 
     # Try "glm" && "B" "C"
