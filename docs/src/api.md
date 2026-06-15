@@ -16,6 +16,11 @@ MetidaBioeq.estimate
 MetidaBioeq.result
 ```
 
+### MetidaBioeq.variance
+```@docs
+MetidaBioeq.variance
+```
+
 ### MetidaBioeq.makeseq
 ```@docs
 MetidaBioeq.makeseq
