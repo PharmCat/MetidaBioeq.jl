@@ -14,9 +14,12 @@ function nomissing(data, cols::AbstractVector)
     true
 end
 
-function functional_term(f, arg_expr...)
-	expr = Expr(:call, Symbol(f), arg_expr...)
-	eval(:(@formula 0 ~ $expr)).rhs
+function functional_term(f, args...)
+    FunctionTerm(
+        f,
+        term.(args),
+        Expr(:call, Symbol(f), args...)
+    )
 end
 
 """
@@ -336,6 +339,40 @@ function makeseq(data;
     map(x-> subjdict[x], getcol(data, subject))
 end
 
+
+function models_create(be, estimator, design = "auto")
+    if design == "parallel"
+         if be.logt
+            return [FormulaTerm(term(i), term(be.formulation)) for i in be.vars]
+        else
+            return [FormulaTerm(functional_term(log, i), term(be.formulation))  for i in be.vars]
+        end
+    end
+
+
+    if estimator == "glm"
+        if be.logt
+            return [FormulaTerm(term(i), term(be.formulation) + term(be.period) + term(be.sequence) + term(be.subject)) for i in be.vars]
+        else
+            return [FormulaTerm(functional_term(log, i), term(be.formulation) + term(be.period) + term(be.sequence) + term(be.subject)) for i in be.vars]
+        end
+    elseif estimator == "met"
+        if be.logt
+            return [FormulaTerm(term(i), term(be.formulation) + term(be.period) + term(be.sequence))  for i in be.vars]
+        else
+            return [FormulaTerm(functional_term(log, i), term(be.formulation) + term(be.period) + term(be.sequence)) for i in be.vars]
+        end
+    elseif estimator == "mm"
+        if be.logt
+            return [FormulaTerm(term(i), term(be.formulation) + term(be.period) + term(be.sequence) + functional_term(|, 1, be.subject))  for i in be.vars]
+        else
+            return [FormulaTerm(functional_term(log, i), term(be.formulation) + term(be.period) + term(be.sequence) + functional_term(|, 1, be.subject))  for i in be.vars]
+        end
+    else
+        error("Unknown estimator!")
+    end
+end
+
 """
     estimate(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
 
@@ -388,7 +425,7 @@ EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE](https://www.ema.europa.e
 EMA: [GUIDELINE ON THE INVESTIGATION OF BIOEQUIVALENCE, Annex I](https://www.ema.europa.eu/en/documents/other/31-annex-i-statistical-analysis-methods-compatible-ema-bioequivalence-guideline_en.pdf)
 
 """
-function estimate(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05)
+function estimate(be; estimator = "auto", method = "auto", supresswarn = false, alpha = 0.05, rsabe = :none, ntid = false)
 
     length(be.formulations) > 2 &&  error("More than 2 formulations not supported yet")
     design = be.design
@@ -432,17 +469,8 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         if method != "P" && !supresswarn @warn("Method not P (parallel), for parallel simple GLM model will be used!") end
         estimator = "glm"
         method = "P"
-        if be.logt
-            models = [@eval @formula($i ~ $(be.formulation)) for i in be.vars]
-        else
-            models = [begin
-                rfo =  @eval  @formula(0 ~ $(be.formulation))
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs) 
-            end for i in be.vars
-            #@eval @formula(log(Term($i)) ~ $(be.formulation)) for i in be.vars
-            ]
-        end
+
+        models = models_create(be, estimator, design) 
 
     elseif design in ("2X2", "2X2X2") 
 
@@ -458,39 +486,7 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
             end
         end
   
-        if estimator == "glm"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
-            else
-                models = [begin 
-                    rfo =  @eval  @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
-                    lhs = functional_term(log, i)
-                    FormulaTerm(lhs, rfo.rhs) 
-                end for i in be.vars]
-            end
-        elseif estimator == "met"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
-            else
-                models = [begin 
-                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence))
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs) 
-            end for i in be.vars]
-            end
-        elseif estimator == "mm"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1|  $(be.subject) )) for i in be.vars]
-            else
-                models = [begin 
-                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs) 
-                end for i in be.vars]
-            end
-        else
-            error("Unknown estimator!")
-        end
+        models = models_create(be, estimator) 
         
     else
         if !(method in ("A", "B", "C"))
@@ -513,47 +509,16 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
             estimator = "met"
         end
 
-        if estimator == "glm"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) for i in be.vars]
-            else
-                models = [begin
-                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + $(be.subject)) 
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs)
-                end for i in be.vars]
-            end
-        elseif estimator == "met"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence)) for i in be.vars]
-            else
-                models = [begin 
-                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence))
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs) 
-                end for i in be.vars]
-            end
-        elseif estimator == "mm"
-            if be.logt
-                models = [@eval @formula($i ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))  for i in be.vars]
-            else
-                models = [begin 
-                rfo = @eval @formula(0 ~ $(be.formulation) + $(be.period) + $(be.sequence) + (1| $(be.subject) ))
-                lhs = functional_term(log, i)
-                FormulaTerm(lhs, rfo.rhs) 
-                end for i in be.vars]
-                
-            end
-        else
-            error("Unknown estimator!")
-        end
+        models = models_create(be, estimator) 
     end
     
+    if rsabe != :none && design in ("parallel", "2X2", "2X2X2") && !supresswarn @warn("rsabe option used with unsupported design, nothing will be done!") end
+
     ####################################
     # ESTIMATION (fitting)
     ####################################
     df     = DataFrame(Parameter = String[], Metric = String[], PE = Float64[], SE = Float64[], DF = Float64[], lnLCI = Float64[], lnUCI = Float64[], GMR = Float64[], LCI = Float64[], UCI = Float64[], level = Float64[])
-    dfdict = Dict(:result => df)
+    dfdict = Dict{Symbol, DataFrame}(:result => df)
     # If GLM used 
     if estimator == "glm"
 
@@ -585,9 +550,6 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
                 σ²,
                 cvfromvar(σ²) * 100
                 ))
-
-
-
             end
 
     # If Metida Used
@@ -598,14 +560,14 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
         if method == "B"
            
             results = [fit!(LMM(m, be.data;
-            random = Metida.VarEffect(@eval(Metida.@covstr(1| $(be.subject))), Metida.SI), 
+            random = Metida.VarEffect(functional_term(|, 1, be.subject), Metida.SI), 
             contrasts = Dict(be.formulation => DummyCoding(base = be.reference)))) for m in models]
             
         elseif method == "C"
-    
+
             results = [fit!(LMM(m, be.data; 
-            random = Metida.VarEffect(@eval(Metida.@covstr($(be.formulation)|$(be.subject))), Metida.CSH),
-            repeated = Metida.VarEffect(@eval(Metida.@covstr($(be.formulation)|$(be.subject))), Metida.DIAG),
+            random = Metida.VarEffect(functional_term(|, be.formulation, be.subject), Metida.CSH),
+            repeated = Metida.VarEffect(functional_term(|, be.formulation, be.subject), Metida.DIAG),
             contrasts = Dict(be.formulation => DummyCoding(base = be.reference)))) for m in models]
             
         else
@@ -686,6 +648,60 @@ function estimate(be; estimator = "auto", method = "auto", supresswarn = false, 
 
     end
 
+    if rsabe != :none && !(design in ("parallel", "2X2", "2X2X2")) 
+        if !(rsabe in (:ema, :fda, :eeu)) rsabe = :unknown end
+        cvdf = dfdict[:scaled_ci] = DataFrame(Metric = String[], Reference = String[], σ²= Float64[], CV = Float64[], Method = String[], LCIL = Float64[], UCIL = Float64[] )
+
+        if be.logt
+            cv_models = [FormulaTerm(term(i), term(be.period) + term(be.sequence) + term(be.subject))  for i in be.vars]
+        else
+            cv_models = [begin
+            rfo = FormulaTerm(0, term(be.period) + term(be.sequence) + term(be.subject)) 
+            lhs = functional_term(log, i)
+            FormulaTerm(lhs, rfo.rhs)
+            end for i in be.vars]
+        end
+        cv_data = filter(be.formulation => x -> x == be.reference, be.data)
+
+        cv_results = [fit(LinearModel, m, cv_data; dropcollinear = true) for m in cv_models]
+
+        for cvr in cv_results
+            σ²  = GLM.dispersion(cvr.model, true)
+            s_wr = sqrt(σ²)
+            cv_w = cvfromvar(σ²) * 100
+
+            if rsabe in (:ema, :eeu) 
+                lcil = cv_w > 30 ? max(69.84,  round(exp(-0.760 * s_wr) * 100, digits = 2)) : 80.0
+                ucil = cv_w > 30 ? min(143.19, round(exp(0.760 * s_wr) * 100, digits = 2))  : 125.00
+            elseif rsabe == :fda 
+                if ntid
+                    lcil = s_wr > 0.1 ? round(exp(-0.893 * s_wr) * 100, digits = 2) : 90.0
+                    ucil = s_wr > 0.1 ? round(exp(0.893 * s_wr) * 100, digits = 2) : 111.11
+                else
+                    lcil = cv_w >= 30 ? round(exp(-0.893 * s_wr) * 100, digits = 2) : 80.0
+                    ucil = cv_w >= 30 ? round(exp(0.893 * s_wr) * 100, digits = 2) : 125.00
+                end
+            else
+                rsabe = :unknown
+                lcil = NaN
+                ucil = NaN
+            end
+
+            push!(cvdf, (
+                coefnames(cvr.mf.f.lhs),
+                string(be.reference),
+                σ²,
+                cv_w,
+                string(rsabe),
+                lcil, 
+                ucil,
+                ))
+        end
+
+    end
+
+    
+
     BEResults(be, results, dfdict, estimator, method)
 end
 
@@ -696,4 +712,13 @@ Returns dataframe with bioequivalence results.
 """
 function result(beres::BEResults)
     beres.df[:result]
+end
+
+"""
+    variance(beres::BEResults)
+
+Returns dataframe with variance.
+"""
+function variance(beres::BEResults)
+    beres.df[:var]
 end
